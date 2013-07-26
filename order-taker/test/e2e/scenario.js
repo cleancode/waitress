@@ -8,7 +8,7 @@ describe('angularjsGruntExampleApp app', function() {
 
     describe('Homepage', function() {
         it('should display the correct route', function() {
-            expect(browser().location().path()).toBe('/');
+            expect(browser().location().path()).toBe('/'); 
         });
     });
 
