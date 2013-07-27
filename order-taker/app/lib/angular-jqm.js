@@ -1012,7 +1012,7 @@ jqmModule.directive('jqmPage', ['$scroller', function ($scroller) {
  * </ul>
  * ### $panel Scope
  *
- * The jqm-panel directive will create a `$panel` object on the current scope. 
+ * The jqm-panel directive will create a `$panel` object on the current scope.
  *
  * If a `position="left"` jqm-panel is created, `scope.$panel.left` will be populated with that panel's data. If a `position="right"` jqm-panel is created, `scope.$panel.right` will be populated.  scope.$panel.left and scope.$panel.right are objects with the following properties:
  *
@@ -1086,11 +1086,11 @@ jqmModule.directive('jqmPanel', ['$transitionComplete', '$window', function(tran
                         element.removeClass('ui-panel-closed');
                         $window.setTimeout(function() {
                             element.addClass('ui-panel-open');
-                            transitionEnd(onChangeDone);
+                            transitionComplete(transitionEls(), onChangeDone, true);
                         }, 1);
                     } else {
                         element.removeClass('ui-panel-open ui-panel-opened');
-                        transitionEnd(onChangeDone);
+                        transitionComplete(transitionEls(), onChangeDone, true);
                     }
                 }
                 function onChangeDone() {
@@ -1103,12 +1103,14 @@ jqmModule.directive('jqmPanel', ['$transitionComplete', '$window', function(tran
                 function otherPanel() {
                     return $panel[scope.position === 'left' ? 'right' : 'left'];
                 }
-                function transitionEnd(cb) {
+                function transitionEls() {
                     //We need to listen for transition complete event on either the panel
-                    //element OR the panel content wrapper element. Some panel display
-                    //types (overlay) only animate the panel, and some (reveal) only 
+                    //element or the panel content wrapper element. Some panel display
+                    //types (overlay) only animate the panel, and some (reveal) only
                     //animate the content wrapper.
-                    transitionComplete(angular.element([element[0], $panel.$contentWrapNode]), cb, true);
+                    return $panel.$contentWrapNode ?
+                        angular.element([element[0], $panel.$contentWrapNode]) :
+                        element;
                 }
                 function toggle() {
                     scope.opened = !scope.opened;
@@ -1289,7 +1291,7 @@ jqmModule.directive('jqmTheme', [function () {
     };
 }]);
 
-jqmModule.directive('jqmViewport', ['jqmCachingViewDirective', '$animator', '$history', 'jqmPanelContentWrapDirective', function (ngViewDirectives, $animator, $history, jqmPanelContentWrapDirectives) {
+jqmModule.directive('jqmViewport', ['jqmCachingViewDirective', '$animator', '$history', 'jqmPanelContentWrapDirective', '$injector', '$route', function (ngViewDirectives, $animator, $history, jqmPanelContentWrapDirectives, $injector, $route) {
     // Note: Can't use template + replace here,
     // as this might be used on the <body>, which is not supported by angular.
     // So we are calling the ngViewDirective#link functions directly...
@@ -1320,23 +1322,31 @@ jqmModule.directive('jqmViewport', ['jqmCachingViewDirective', '$animator', '$hi
             }
             iElement.addClass("ui-overlay-" + pageScope.$theme);
         });
-        scope.$on('$routeChangeStart', function (scope, newRoute) {
+        scope.$on('$routeChangeStart', function (e, newRoute) {
             // Use $routeChangeStart and not $watch:
             // Need to update the animate function before
             // ngView evaluates it!
             var transition,
-                reverse = $history.activeIndex < $history.previousIndex;
+            transitionName,
+            reverse = $history.activeIndex < $history.previousIndex;
+
             if (reverse) {
                 transition = $history.urlStack[$history.previousIndex].transition;
             } else {
                 transition = newRoute.transition;
-                if (angular.isFunction(transition)) {
-                    transition = transition(newRoute.params);
-                }
-                $history.urlStack[$history.activeIndex].transition = transition;
             }
-            transition = transition || 'none';
-            iAttrs.$set('ngAnimate', "'jqmPage-" + transition + (reverse?"-reverse":"")+"'");
+            $history.urlStack[$history.activeIndex].transition = transition;
+
+            if (angular.isFunction(transition) || angular.isArray(transition)) {
+                transitionName = $injector.invoke(newRoute.transition, null, {
+                    $scope: scope,
+                    $routeParams: newRoute.params
+                });
+            } else {
+                transitionName = transition;
+            }
+
+            iAttrs.$set('ngAnimate', "'jqmPage-" + (transitionName||'none') + (reverse?"-reverse":"")+"'");
         });
 
         angular.forEach(jqmPanelContentWrapDirectives, function(delegate) {
@@ -1841,11 +1851,11 @@ jqmModule.config(['$provide', function ($provide) {
     /*! matchMedia() polyfill - Test a CSS media type/query in JS. Authors & copyright (c) 2012: Scott Jehl, Paul Irish, Nicholas Zakas. Dual MIT/BSD license */
     window.matchMedia = window.matchMedia || (function (doc) {
         var bool,
-            docElem = doc.documentElement,
-            refNode = docElem.firstElementChild || docElem.firstChild,
+        docElem = doc.documentElement,
+        refNode = docElem.firstElementChild || docElem.firstChild,
         // fakeBody required for <FF4 when executed in <head>
-            fakeBody = doc.createElement("body"),
-            div = doc.createElement("div");
+        fakeBody = doc.createElement("body"),
+        div = doc.createElement("div");
 
         div.id = "mq-test-1";
         div.style.cssText = "position:absolute;top:-100em";
@@ -1871,13 +1881,16 @@ jqmModule.config(['$provide', function ($provide) {
 })();
 
 jqmModule.config(['$provide', function ($provide) {
-    $provide.decorator('$sniffer', ['$delegate', '$window', function ($sniffer, $window) {
+    $provide.decorator('$sniffer', ['$delegate', '$window', '$document', function ($sniffer, $window, $document) {
         var fakeBody = angular.element("<body>");
         angular.element($window).prepend(fakeBody);
 
         $sniffer.cssTransform3d = transform3dTest();
 
+        android2Transitions();
+
         fakeBody.remove();
+
         return $sniffer;
 
         function media(q) {
@@ -1887,20 +1900,20 @@ jqmModule.config(['$provide', function ($provide) {
         // This is a copy of jquery mobile 1.3.1 detection for transform3dTest
         function transform3dTest() {
             var mqProp = "transform-3d",
-                vendors = [ "Webkit", "Moz", "O" ],
+            vendors = [ "Webkit", "Moz", "O" ],
             // Because the `translate3d` test below throws false positives in Android:
-                ret = media("(-" + vendors.join("-" + mqProp + "),(-") + "-" + mqProp + "),(" + mqProp + ")");
+            ret = media("(-" + vendors.join("-" + mqProp + "),(-") + "-" + mqProp + "),(" + mqProp + ")");
 
             if (ret) {
                 return !!ret;
             }
 
             var el = $window.document.createElement("div"),
-                transforms = {
-                    // We’re omitting Opera for the time being; MS uses unprefixed.
-                    'MozTransform': '-moz-transform',
-                    'transform': 'transform'
-                };
+            transforms = {
+                // We’re omitting Opera for the time being; MS uses unprefixed.
+                'MozTransform': '-moz-transform',
+                'transform': 'transform'
+            };
 
             fakeBody.append(el);
 
@@ -1913,9 +1926,22 @@ jqmModule.config(['$provide', function ($provide) {
             return ( !!ret && ret !== "none" );
         }
 
+        //Fix android 2 not reading transitions correct.
+        //https://github.com/angular/angular.js/pull/3086
+        //https://github.com/opitzconsulting/angular-jqm/issues/89
+        function android2Transitions() {
+            if (!$sniffer.transitions || !$sniffer.animations) {
+                $sniffer.transitions = angular.isString($document[0].body.style.webkitTransition);
+                $sniffer.animations = angular.isString($document[0].body.style.webkitAnimation);
+                if ($sniffer.animations || $sniffer.transitions) {
+                    $sniffer.vendorPrefix = 'webkit';
+                    $sniffer.cssTransform3d = true;
+                }
+            }
+        }
+
     }]);
 }]);
-
 
 jqmModule.config(['$provide', function ($provide) {
     /**
@@ -2020,9 +2046,9 @@ angular.module("templates/jqmFlip.html", []).run(["$templateCache", function($te
 
 angular.module("templates/jqmLiEntry.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("templates/jqmLiEntry.html",
-    "<li class=\"ui-li\"\n" +
-    "  jqm-once-class=\"{{divider ? 'ui-li-divider ui-bar-'+$theme : 'ui-li-static jqm-active-toggle'}}\"\n" +
-    "  jqm-class=\"{'ui-first-child': $position.first, 'ui-last-child': $position.last}\"\n" +
+    "<li class=\"ui-li\" jqm-scope-as=\"jqmLi\"\n" +
+    "  jqm-once-class=\"{{$scopeAs.jqmLi.divider ? 'ui-li-divider ui-bar-'+$theme : 'ui-li-static jqm-active-toggle'}}\"\n" +
+    "  jqm-class=\"{'ui-first-child': $scopeAs.jqmLi.$position.first, 'ui-last-child': $scopeAs.jqmLi.$position.last}\"\n" +
     "  ng-transclude>\n" +
     "</li>\n" +
     "");
@@ -2030,16 +2056,22 @@ angular.module("templates/jqmLiEntry.html", []).run(["$templateCache", function(
 
 angular.module("templates/jqmLiLink.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("templates/jqmLiLink.html",
-    "<li class=\"ui-li ui-btn\"\n" +
-    "  jqm-once-class=\"{{icon ? 'ui-li-has-arrow ui-btn-icon-'+iconpos : ''}}\"\n" +
-    "  jqm-class=\"{'ui-first-child': $position.first, 'ui-last-child': $position.last, \n" +
-    "    'ui-li-has-thumb': hasThumb, 'ui-li-has-count': hasCount}\">\n" +
+    "<li class=\"ui-li ui-btn\" jqm-scope-as=\"jqmLiLink\"\n" +
+    "  jqm-once-class=\"{{$scopeAs.jqmLiLink.icon ? 'ui-li-has-arrow ui-btn-icon-'+$scopeAs.jqmLiLink.iconpos : ''}}\"\n" +
+    "  jqm-class=\"{'ui-first-child': $scopeAs.jqmLiLink.$position.first, \n" +
+    "    'ui-last-child': $scopeAs.jqmLiLink.$position.last, \n" +
+    "    'ui-li-has-thumb': $scopeAs.jqmLiLink.hasThumb, \n" +
+    "    'ui-li-has-count': $scopeAs.jqmLiLink.hasCount}\">\n" +
     "  <div class=\"ui-btn-inner ui-li\">\n" +
-    "    <div class=\"ui-btn-text\">\n" +
-    "      <a ng-href=\"{{link}}\" class=\"ui-link-inherit\" ng-transclude>\n" +
+    "      <div class=\"ui-btn-text\">\n" +
+    "      <a ng-href=\"{{$scopeAs.jqmLiLink.link}}\" class=\"ui-link-inherit\" ng-transclude>\n" +
     "      </a>\n" +
     "    </div>\n" +
-    "    <span ng-if=\"icon\" class=\"ui-icon {{icon}}\" jqm-class=\"{'ui-icon-shadow': iconShadow}\">&nbsp;</span>\n" +
+    "    <span ng-show=\"$scopeAs.jqmLiLink.icon\" \n" +
+    "      class=\"ui-icon {{$scopeAs.jqmLiLink.icon}}\" \n" +
+    "      jqm-class=\"{'ui-icon-shadow': $scopeAs.jqmLiLink.iconShadow}\">\n" +
+    "      &nbsp;\n" +
+    "    </span>\n" +
     "  </div>\n" +
     "</li>\n" +
     "");
@@ -2047,8 +2079,10 @@ angular.module("templates/jqmLiLink.html", []).run(["$templateCache", function($
 
 angular.module("templates/jqmListview.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("templates/jqmListview.html",
-    "<ul class=\"ui-listview\"\n" +
-    "  jqm-class=\"{'ui-listview-inset': inset, 'ui-corner-all': inset && corners, 'ui-shadow': inset && shadow}\"\n" +
+    "<ul class=\"ui-listview\" jqm-scope-as=\"jqmListview\"\n" +
+    "  jqm-class=\"{'ui-listview-inset': $scopeAs.jqmListview.inset,\n" +
+    "    'ui-corner-all': $scopeAs.jqmListview.inset && $scopeAs.jqmListview.corners, \n" +
+    "    'ui-shadow': $scopeAs.jqmListview.inset && $scopeAs.jqmListview.shadow}\"\n" +
     "  ng-transclude jqm-position-anchor>\n" +
     "</ul>\n" +
     "");
@@ -2064,3 +2098,418 @@ angular.module("templates/jqmPanel.html", []).run(["$templateCache", function($t
 }]);
 
 angular.element(window.document).find('head').append('<style type="text/css">* {\n    -webkit-backface-visibility-hidden;\n}\nhtml, body {\n    -webkit-user-select: none;\n}\n\n/* browser resets */\n.ui-mobile, .ui-mobile html, .ui-mobile body {\n    height: 100%;\n    margin: 0\n}\n\n.ui-footer {\n    position: absolute;\n    bottom: 0;\n    width: 100%;\n    z-index: 1\n}\n\n.ui-header {\n    position: absolute;\n    top: 0;\n    width: 100%;\n    z-index: 1\n}\n\n.ui-mobile .ui-page {\n    height: 100%;\n    min-height: 0;\n    overflow: hidden;\n}\n.ui-content {\n    position: relative;\n    margin: 0;\n    padding: 0;\n}\n.ui-content.jqm-content-with-header {\n    margin-top: 42px\n}\n\n.ui-content.jqm-content-with-footer {\n    margin-bottom: 43px\n}\n.jqm-standalone-page {\n    display: block;\n    position: relative;\n}\n.ui-panel {\n  position: absolute;\n}\n\n.ui-panel-closed {\n  display: none;\n}\n\n.ui-panel.ui-panel-opened {\n  z-index: 1001;\n}\n.ui-panel-dismiss {\n  z-index: 1000; /* lower than ui-panel */\n}\n\n\n.ui-mobile-viewport {\n    /* needed to allow multiple viewports */\n    position: relative;\n    height:100%\n}\n</style>');})(window, angular);
+/*
+ * angular-scrolly - v0.0.1 - 2013-05-29
+ * http://github.com/ajoslin/angular-scrolly
+ * Created by Andy Joslin; Licensed under Public Domain
+ */
+angular.module('ajoslin.scrolly', [
+  'ajoslin.scrolly.dragger',
+  'ajoslin.scrolly.transformer',
+  'ajoslin.scrolly.scroller',
+  'ajoslin.scrolly.directives'
+]);angular.module('ajoslin.scrolly.directives', ['ajoslin.scrolly.scroller']).directive('scrollyScroll', [
+  '$scroller',
+  '$document',
+  function ($scroller, $document) {
+    angular.element(document.body).bind('touchmove', function (e) {
+      e.preventDefault();
+    });
+    return {
+      restrict: 'A',
+      link: function (scope, elm, attrs) {
+        var scroller = new $scroller(elm);
+      }
+    };
+  }
+]);angular.module('ajoslin.scrolly.dragger', []).provider('$dragger', function () {
+  var _shouldBlurOnDrag = true;
+  this.shouldBlurOnDrag = function (shouldBlur) {
+    arguments.length && (_shouldBlurOnDrag = !!shouldBlur);
+    return _shouldBlurOnDrag;
+  };
+  var _minDistanceForDrag = 6;
+  this.minDistanceForDrag = function (newMinDistanceForDrag) {
+    arguments.length && (_minDistanceForDrag = newMinDistanceForDrag);
+    return _minDistanceForDrag;
+  };
+  var _maxTimeMotionless = 300;
+  this.maxTimeMotionless = function (newMaxTimeMotionless) {
+    arguments.length && (_maxTimeMotionless = newMaxTimeMotionless);
+    return _maxTimeMotionless;
+  };
+  function parentWithAttr(el, attr) {
+    while (el.parentNode) {
+      if (el.getAttribute && el.getAttribute(attr)) {
+        return el;
+      }
+      el = el.parentNode;
+    }
+    return null;
+  }
+  this.$get = [
+    '$window',
+    '$document',
+    function ($window, $document) {
+      var hasTouch = 'ontouchstart' in $window;
+      var events = {
+          start: hasTouch ? 'touchstart' : 'mousedown',
+          move: hasTouch ? 'touchmove' : 'mousemove',
+          end: hasTouch ? 'touchend' : 'mouseup',
+          cancel: hasTouch ? 'touchcancel' : ''
+        };
+      function $dragger(elm) {
+        var self = {};
+        var raw = elm[0];
+        var state = {
+            startPos: 0,
+            startTime: 0,
+            pos: 0,
+            delta: 0,
+            distance: 0,
+            lastMoveTime: 0,
+            inactiveDrag: false,
+            dragging: false
+          };
+        var listeners = [];
+        function dispatchEvent(eventType, arg) {
+          angular.forEach(listeners, function (cb) {
+            cb(eventType, arg);
+          });
+        }
+        elm.bind(events.start, dragStart);
+        elm.bind(events.move, dragMove);
+        elm.bind(events.end, dragEnd);
+        events.cancel && elm.bind(events.cancel, dragEnd);
+        if (!hasTouch) {
+          elm.bind('mouseout', function mouseout(e) {
+            var t = e.relatedTarget;
+            if (!t) {
+              dragEnd(e);
+            } else {
+              while (t = t.parentNode) {
+                if (t === elm)
+                  return;
+              }
+              dragEnd(e);
+            }
+          });
+        }
+        function restartDragState(y) {
+          state.startPos = state.pos = y;
+          state.startTime = Date.now();
+          state.dragging = true;
+        }
+        function isInput(raw) {
+          return raw && raw.tagName === 'INPUT' || raw.tagName === 'SELECT' || raw.tagName === 'TEXTAREA';
+        }
+        function dragStart(e) {
+          if (!hasTouch && e.button)
+            return;
+          var target = e.target || e.srcElement;
+          var point = e.touches ? e.touches[0] : e;
+          if (parentWithAttr(target, 'data-dragger-ignore')) {
+            return;
+          }
+          if (_shouldBlurOnDrag && target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA' && target.tagName !== 'SELECT') {
+            document.activeElement && document.activeElement.blur();
+          }
+          state.moved = false;
+          state.inactiveDrag = false;
+          state.delta = 0;
+          state.pos = 0;
+          state.distance = 0;
+          restartDragState(point.pageY);
+          dispatchEvent({
+            type: 'start',
+            startPos: state.startPos,
+            startTime: state.startTime
+          });
+        }
+        function dragMove(e) {
+          e.preventDefault();
+          if (state.dragging) {
+            var point = e.touches ? e.touches[0] : e;
+            var delta = point.pageY - state.pos;
+            state.delta = delta;
+            state.pos = point.pageY;
+            state.distance = state.pos - state.startPos;
+            if (Math.abs(state.pos - state.startPos) < _minDistanceForDrag) {
+              return;
+            }
+            state.moved = true;
+            var timeSinceMove = state.lastMoveTime - state.startTime;
+            if (timeSinceMove > _maxTimeMotionless) {
+              restartDragState(state.pos);
+            }
+            state.lastMoveTime = e.timeStamp || Date.now();
+            dispatchEvent({
+              type: 'move',
+              startPos: state.startPos,
+              startTime: state.startTime,
+              pos: state.pos,
+              delta: state.delta,
+              distance: state.distance
+            });
+          }
+        }
+        function dragEnd(e) {
+          if (state.dragging) {
+            state.dragging = false;
+            var duration = Date.now() - state.startTime;
+            var inactiveDrag = duration > _maxTimeMotionless;
+            dispatchEvent({
+              type: 'end',
+              startPos: state.startPos,
+              startTime: state.startTime,
+              pos: state.pos,
+              delta: state.delta,
+              distance: state.distance,
+              duration: duration,
+              inactiveDrag: inactiveDrag
+            });
+          }
+        }
+        self.addListener = function (callback) {
+          if (!angular.isFunction(callback)) {
+            throw new Error('Expected callback to be a function, instead got \'' + typeof callback + '".');
+          }
+          listeners.push(callback);
+        };
+        self.removeListener = function (callback) {
+          if (!angular.isFunction(callback)) {
+            throw new Error('Expected callback to be a function, instead got \'' + typeof callback + '".');
+          }
+          var index = listeners.indexOf(callback);
+          if (index > -1) {
+            listeners.splice(index, 1);
+          }
+        };
+        return self;
+      }
+      $dragger.events = function () {
+        return events;
+      };
+      return $dragger;
+    }
+  ];
+});angular.module('ajoslin.scrolly.scroller', [
+  'ajoslin.scrolly.dragger',
+  'ajoslin.scrolly.scroller'
+]).provider('$scroller', function () {
+  var _decelerationRate = 0.001;
+  this.decelerationRate = function (newDecelerationRate) {
+    arguments.length && (_decelerationRate = newDecelerationRate);
+    return _decelerationRate;
+  };
+  var _bounceBuffer = 40;
+  this.bounceBuffer = function (newBounceBuffer) {
+    arguments.length && (_bounceBuffer = newBounceBuffer);
+    return _bounceBuffer;
+  };
+  var _bounceBackMinTime = 200;
+  var _bounceBackDistanceMulti = 1.5;
+  this.bounceBackMinTime = function (newBounceBackMinTime) {
+    arguments.length && (_bounceBackMinTime = newBounceBackMinTime);
+    return _bounceBackMinTime;
+  };
+  this.bounceBackDistanceMulti = function (newBounceBackDistanceMult) {
+    arguments.length && (_bounceBackDistanceMulti = newBounceBackDistanceMult);
+    return _bounceBackDistanceMulti;
+  };
+  function getRect(elm) {
+    var style = window.getComputedStyle(elm);
+    var offTop = parseInt(style['margin-top'], 10) + parseInt(style['padding-top'], 10);
+    var offBottom = parseInt(style['margin-bottom'], 10) + parseInt(style['padding-bottom'], 10);
+    var height = parseInt(style.height, 10);
+    return {
+      top: offTop,
+      bottom: offBottom,
+      height: height
+    };
+  }
+  function floor(n) {
+    return n | 0;
+  }
+  function bounceTime(howMuchOut) {
+    return Math.abs(howMuchOut) * _bounceBackDistanceMulti + _bounceBackMinTime;
+  }
+  this.$get = [
+    '$dragger',
+    '$transformer',
+    '$window',
+    function ($dragger, $transformer, $window) {
+      function scroller(elm) {
+        var self = {};
+        var raw = elm[0];
+        var transformer = new $transformer(elm);
+        var dragger = new $dragger(elm);
+        function calculateHeight() {
+          var rect = getRect(raw);
+          var screenHeight = $window.innerHeight;
+          if (rect.height < screenHeight) {
+            self.scrollHeight = 0;
+          } else {
+            self.scrollHeight = rect.height - screenHeight + rect.top + rect.bottom;
+          }
+          return self.scrollHeight;
+        }
+        window.s = self;
+        calculateHeight();
+        function outOfBounds(pos) {
+          if (pos > 0)
+            return pos;
+          if (pos < -self.scrollHeight)
+            return pos + self.scrollHeight;
+          return false;
+        }
+        function dragListener(dragData) {
+          switch (dragData.type) {
+          case 'start':
+            if (transformer.changing) {
+              transformer.stop();
+            }
+            calculateHeight();
+            break;
+          case 'move':
+            var newPos = transformer.pos + dragData.delta;
+            if (outOfBounds(newPos)) {
+              newPos = transformer.pos + floor(dragData.delta * 0.5);
+            }
+            transformer.setTo(newPos);
+            break;
+          case 'end':
+            if (outOfBounds(transformer.pos) || dragData.inactiveDrag) {
+              checkBoundaries();
+            } else {
+              calculateHeight();
+              var momentum = calcMomentum(dragData);
+              if (momentum.position !== transformer.pos) {
+                transformer.easeTo(momentum.position, momentum.time, checkBoundaries);
+              }
+            }
+            break;
+          }
+        }
+        function checkBoundaries() {
+          calculateHeight();
+          var howMuchOut = outOfBounds(transformer.pos);
+          if (howMuchOut) {
+            var newPosition = howMuchOut > 0 ? 0 : -self.scrollHeight;
+            transformer.easeTo(newPosition, bounceTime(howMuchOut));
+          }
+        }
+        function calcMomentum(dragData) {
+          var speed = Math.abs(dragData.distance) / dragData.duration;
+          var newPos = transformer.pos + speed * speed / (2 * _decelerationRate) * (dragData.distance < 0 ? -1 : 1);
+          var time = speed / _decelerationRate;
+          var howMuchOver = outOfBounds(newPos);
+          var distance;
+          if (howMuchOver) {
+            if (howMuchOver > 0) {
+              newPos = Math.min(howMuchOver, _bounceBuffer);
+              distance = Math.abs(newPos - transformer.pos);
+              time = distance / speed;
+            } else if (howMuchOver < 0) {
+              newPos = Math.max(newPos, -(self.scrollHeight + _bounceBuffer));
+              distance = Math.abs(newPos - transformer.pos);
+              time = distance / speed;
+            }
+          }
+          return {
+            position: newPos,
+            time: floor(time)
+          };
+        }
+        dragger.addListener(dragListener);
+        elm.bind('$destroy', function () {
+          dragger.removeListener(dragListener);
+        });
+        return self;
+      }
+      return scroller;
+    }
+  ];
+});angular.module('ajoslin.scrolly.transformer', []).factory('$nextFrame', [
+  '$window',
+  function ($window) {
+    return $window.requestAnimationFrame || $window.webkitRequestAnimationFrame || $window.mozRequestAnimationFrame || function fallback(cb) {
+      return $window.setTimeout(cb, 17);
+    };
+  }
+]).provider('$transformer', function () {
+  var timingFunction = 'cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+  this.timingFunction = function (newTimingFunction) {
+    arguments.length && (timingFunction = newTimingFunction);
+    return timingFunction;
+  };
+  this.$get = [
+    '$window',
+    '$nextFrame',
+    function ($window, $nextFrame) {
+      var transformProp = 'webkitTransform';
+      var transformPropDash = '-webkit-transform';
+      var transitionProp = 'webkitTransition';
+      function transitionString(transitionTime) {
+        return transformPropDash + ' ' + transitionTime + 'ms ' + timingFunction;
+      }
+      function $transformer(elm) {
+        var self = {};
+        var raw = elm[0];
+        self.$$calcPosition = function () {
+          var matrix = $window.getComputedStyle(raw)[transformProp].replace(/[^0-9-.,]/g, '').split(',');
+          if (matrix.length > 1) {
+            return parseInt(matrix[5], 10);
+          } else {
+            return 0;
+          }
+        };
+        self.pos = self.$$calcPosition();
+        var transitionEndTimeout;
+        self.stop = function (done) {
+          if (transitionEndTimeout) {
+            $window.clearTimeout(transitionEndTimeout);
+            transitionEndTimeout = null;
+          }
+          raw.style[transitionProp] = 'none';
+          self.pos = self.$$calcPosition();
+          self.changing = false;
+          $nextFrame(function () {
+            self.setTo(self.pos);
+            done && done();
+          });
+        };
+        self.easeTo = function (y, transitionTime, done) {
+          if (!angular.isNumber(transitionTime) || transitionTime < 0) {
+            throw new Error('Expected a positive number for time, got \'' + transitionTime + '\'.');
+          }
+          if (self.changing) {
+            self.stop(doTransition);
+          } else {
+            doTransition();
+          }
+          function doTransition() {
+            raw.style[transitionProp] = transitionString(transitionTime);
+            self.changing = true;
+            $nextFrame(function () {
+              self.setTo(y);
+              transitionEndTimeout = $window.setTimeout(function () {
+                self.stop();
+                done && done();
+              }, transitionTime);
+            });
+          }
+        };
+        self.setTo = function (y) {
+          self.pos = y;
+          raw.style[transformProp] = 'translate3d(0,' + y + 'px,0)';
+        };
+        return self;
+      }
+      $transformer.transformProp = transformProp;
+      $transformer.transformPropDash = transformPropDash;
+      $transformer.transitionProp = transitionProp;
+      return $transformer;
+    }
+  ];
+});

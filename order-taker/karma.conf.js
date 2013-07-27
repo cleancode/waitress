@@ -8,6 +8,8 @@ files = [
   JASMINE,
   JASMINE_ADAPTER,
   'app/bower_components/angular/angular.js',
+  'app/bower_components/angular/angular-mobile.js',
+  'app/lib/angular-jqm.js',
   'app/bower_components/angular/angular-mocks.js',
   'app/scripts/*.js',
   'app/scripts/**/*.js',

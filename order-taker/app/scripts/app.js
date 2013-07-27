@@ -1,13 +1,18 @@
 'use strict';
 
-angular.module('waitressApp', [])
+angular.module('waitressApp', ['jqm','waitressApp.services'])
   .config(['$routeProvider', function ($routeProvider) {
     $routeProvider
-      .when('/', {
-        templateUrl: 'views/main.html',
-        controller: 'MainCtrl'
+      .when('/dishes', {
+        templateUrl: 'views/dishes.html',
+        controller: 'DishesCtrl',
+        resolve: {
+          dishes: function(DishesLoader){
+            return DishesLoader();
+          }
+        }
       })
       .otherwise({
-        redirectTo: '/'
+        redirectTo: '/dishes'
       });
   }]);
