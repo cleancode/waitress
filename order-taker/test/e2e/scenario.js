@@ -1,14 +1,11 @@
 'use strict';
 
-describe('angularjsGruntExampleApp app', function() {
+describe('Waitress app', function() {
 
-    beforeEach(function() {
-        browser().navigateTo('/');
-    });
-
-    describe('Homepage', function() {
+    describe('Dishes', function() {
         it('should display the correct route', function() {
-            expect(browser().location().path()).toBe('/'); 
+        	browser().navigateTo('/#/dishes');
+            expect(browser().location().path()).toBe('/dishes'); 
         });
     });
 
