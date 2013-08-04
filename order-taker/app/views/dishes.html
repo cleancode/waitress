@@ -1,0 +1,15 @@
+<div jqm-page>
+    <div jqm-header><h1>Pick a dish</h1></div>
+
+    <div jqm-listview inset="true">
+    	<div ng-repeat="dish in dishes | orderBy:'category'">
+        	<div ng-if="!dish.iscategory" jqm-li-link >
+            	{{dish.name}}
+        	</div>
+        	<div ng-if="dish.iscategory" jqm-li-divider >
+            	{{dish.category}}
+        	</div>        	
+        </div>
+    </div>
+
+</div>
