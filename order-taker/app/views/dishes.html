@@ -3,7 +3,7 @@
 
     <div jqm-listview inset="true">
     	<div ng-repeat="dish in dishes | orderBy:'category'">
-        	<div ng-if="!dish.iscategory" jqm-li-link >
+        	<div ng-if="!dish.iscategory" jqm-li-link ng-click="details(dish)">
             	{{dish.name}}
         	</div>
         	<div ng-if="dish.iscategory" jqm-li-divider >

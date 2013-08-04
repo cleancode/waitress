@@ -1,7 +1,7 @@
 'use strict';
 
 angular.module('waitressApp')
-  .controller('DishesCtrl', ['$scope','dishes', function ($scope, dishes) {	
+  .controller('DishesCtrl', ['$scope','$location', 'dishes', function ($scope, $location, dishes) {	
 		
 		var categories = [];
 		angular.forEach(dishes, function(dish){
@@ -13,5 +13,9 @@ angular.module('waitressApp')
 			dishes.unshift({ iscategory: true, category: category });
 		});
 
-		$scope.dishes = dishes;	
+		$scope.dishes = dishes;
+
+		$scope.details = function(dish){
+			$location.path('/dish/' + dish.id);
+		};
   }]);

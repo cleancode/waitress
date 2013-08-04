@@ -1,0 +1,12 @@
+<div jqm-page>
+    <div jqm-header>
+        <jqm-button text="Back" extraclasses="ui-btn-left ui-btn-icon-left" icon="ui-icon-arrow-l" click="dishes()"></jqm-button>
+        <h1>Detail</h1>
+    </div>
+
+    <div jqm-fieldcontain>
+        <label class="ui-select">Portions:</label>
+        <jqm-select jqmmodel="dish.portions" jqmoptions="id as name for (id,name) in items" jqmitems="items"></jqm-select>
+    </div>
+
+</div>

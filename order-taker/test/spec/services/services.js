@@ -26,3 +26,19 @@ describe('Dishes', function(){
 		expect(dishes.length).toEqual(2);
 	});
 });
+
+describe('orderService', function(){
+	var service;
+
+	beforeEach(module('waitressApp'));
+
+	beforeEach(inject(function(orderService){
+		service = orderService;
+	}));
+
+	it('should store the choices for an order', function(){
+		expect(service.getDishdetail(10)).toEqual({ portions: 0 });
+		service.setDishdetail(10, { portions: 3 });
+		expect(service.getDishdetail(10)).toEqual({ portions: 3 });
+	});
+});

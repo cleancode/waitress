@@ -15,3 +15,16 @@ services.factory('DishesLoader',['$q','$http', function($q, $http){
 		return delay.promise;
 	}
 }]);
+
+services.service('orderService', function(){
+	var currentOrder = {};
+
+	return {
+		getDishdetail: function(id){
+			return currentOrder[id] || { portions: 0 };
+		},
+		setDishdetail: function(id,details){
+			currentOrder[id] = details;
+		}
+	}
+});
