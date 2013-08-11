@@ -1,33 +1,20 @@
-'use strict';
+
 
 angular.module("waitressApp.directives",[])
 
-    .directive('jqmButton',function() {
-        return {
-            restrict: 'E',
-            replace: true,
-            transclude: true,
-            scope: {
-                icon: '@',
-                text: '@',
-                extraclasses: '@',
-                click: '&'
-            },
-            templateUrl: 'views/directives/jqmbutton.html' 
-        };
-    })
-
     .directive('jqmFieldcontain', function(){
+        'use strict';
+
         return {
             restrict: 'A',
             replace: true,
             transclude: true,
             template: '<div class="ui-field-contain ui-body ui-br"></div>',
             compile: function(elem, attrs, transcludeFn) {
-                return function (scope, element, attrs) {
+                return function (scope, element) {
                     transcludeFn(scope, function(clone) {
                         for(var x=0; x<clone.length; x++){
-                            if(clone[x].nodeType != 3){
+                            if(clone[x].nodeType !== 3){
                                 element.append(clone[x]);
                             }
                         }
@@ -38,6 +25,8 @@ angular.module("waitressApp.directives",[])
     })
 
     .directive('jqmSelect', function(){
+        'use strict';
+
         return {
             restrict: 'E',
             replace: true,
@@ -48,4 +37,4 @@ angular.module("waitressApp.directives",[])
             },
             templateUrl: 'views/directives/jqmselect.html'
         };
-    })
+    });

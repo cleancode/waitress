@@ -4,12 +4,17 @@
     <div jqm-listview inset="true">
     	<div ng-repeat="dish in dishes | orderBy:'category'">
         	<div ng-if="!dish.iscategory" jqm-li-link ng-click="details(dish)">
-            	{{dish.name}}
+            	{{dish.name}} <small>({{ getPortions(dish.id) }} porzioni)</small>
         	</div>
         	<div ng-if="dish.iscategory" jqm-li-divider >
             	{{dish.category}}
         	</div>        	
         </div>
+    </div>
+
+    <div jqm-controlgroup>
+        <div jqm-button="submit" ng-click="saveOrder()" jqm-theme="b" icon="ui-icon-check" iconpos="left">Invia la comanda</div>
+        <div jqm-button="reset" ng-click="resetOrder()" jqm-theme="c" icon="ui-icon-minus" iconpos="left">Resetta la comanda</div>
     </div>
 
 </div>

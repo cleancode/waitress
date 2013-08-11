@@ -1,4 +1,4 @@
-/*! angular-jqm - v0.0.1-SNAPSHOT - 2013-07-25
+/*! angular-jqm - v0.0.1-SNAPSHOT - 2013-08-08
  * https://github.com/opitzconsulting/angular-jqm
  * Copyright (c) 2013 OPITZ CONSULTING GmbH; Licensed MIT */
 (function(window, angular) {
@@ -11,6 +11,63 @@
  * 'jqm' is the one module that contains all jqm code.
  */
 var jqmModule = angular.module("jqm", ["jqm-templates", "ngMobile", "ajoslin.scrolly"]);
+jqmModule.config(['$provide', function ($provide) {
+    $provide.decorator('$animator', ['$delegate', function ($animator) {
+
+        patchedAnimator.enabled = $animator.enabled;
+        return patchedAnimator;
+
+        function patchedAnimator(scope, attr) {
+            var animation = $animator(scope, attr),
+                _leave = animation.leave,
+                _enter = animation.enter;
+            animation.enter = patchedEnter;
+            animation.leave = patchedLeave;
+            return animation;
+
+            // if animations are disabled or we have none
+            // add the "ui-page-active" css class manually.
+            // E.g. needed for the initial page.
+            function patchedEnter(elements) {
+                var i, el;
+                if (!$animator.enabled() || !animationName("enter")) {
+                    forEachPage(elements, function (element) {
+                        angular.element(element).addClass("ui-page-active");
+                    });
+                }
+                /*jshint -W040:true*/
+                return _enter.apply(this, arguments);
+            }
+
+            function patchedLeave(elements) {
+                if (!$animator.enabled() || !animationName("leave")) {
+                    forEachPage(elements, function (element) {
+                        angular.element(element).removeClass("ui-page-active");
+                    });
+                }
+                /*jshint -W040:true*/
+                return _leave.apply(this, arguments);
+            }
+
+            function forEachPage(elements, callback) {
+                angular.forEach(elements, function (element) {
+                    if (element.className && ~element.className.indexOf('ui-page')) {
+                        callback(element);
+                    }
+                });
+            }
+
+            function animationName(type) {
+                // Copied from AnimationProvider.
+                var ngAnimateValue = scope.$eval(attr.ngAnimate);
+                var className = ngAnimateValue ?
+                    angular.isObject(ngAnimateValue) ? ngAnimateValue[type] : ngAnimateValue + '-' + type
+                    : '';
+                return className;
+            }
+        }
+    }]);
+}]);
 
 var PAGE_ANIMATION_DEFS = {
     none: {
@@ -67,8 +124,8 @@ function registerPageAnimations(animations) {
     }
 }
 
-function registerPageAnimation(transitionType, reverse, direction) {
-    var ngName = "jqmPage-" + transitionType;
+function registerPageAnimation(animationType, reverse, direction) {
+    var ngName = "page-" + animationType;
 
     if (reverse) {
         ngName += "-reverse";
@@ -76,15 +133,15 @@ function registerPageAnimation(transitionType, reverse, direction) {
     ngName += "-" + direction;
 
     jqmModule.animation(ngName, ['$animationComplete', '$sniffer', function (animationComplete, $sniffer) {
-        var degradedTransitionType = maybeDegradeTransition(transitionType),
+        var degradedAnimationType = maybeDegradeAnimation(animationType),
             activePageClass = "ui-page-active",
             toPreClass = "ui-page-pre-in",
-            addClasses = degradedTransitionType + (reverse ? " reverse" : ""),
-            removeClasses = "out in reverse " + degradedTransitionType,
-            viewPortClasses = "ui-mobile-viewport-transitioning viewport-" + degradedTransitionType,
-            transitionDef = PAGE_ANIMATION_DEFS[degradedTransitionType];
+            addClasses = degradedAnimationType + (reverse ? " reverse" : ""),
+            removeClasses = "out in reverse " + degradedAnimationType,
+            viewPortClasses = "ui-mobile-viewport-transitioning viewport-" + degradedAnimationType,
+            animationDef = PAGE_ANIMATION_DEFS[degradedAnimationType];
 
-        if (degradedTransitionType === 'none') {
+        if (degradedAnimationType === 'none') {
             return {
                 setup: setupNone,
                 start: startNone
@@ -109,7 +166,7 @@ function registerPageAnimation(transitionType, reverse, direction) {
         // --------------
 
         function setupNone(element) {
-            element = firstElement(element);
+            element = filterElementsWithParents(element);
             if (direction === "leave") {
                 element.removeClass(activePageClass);
             } else {
@@ -123,186 +180,214 @@ function registerPageAnimation(transitionType, reverse, direction) {
 
         function setupEnter(element) {
             var synchronization;
-            element = firstElement(element);
-            synchronization = createSynchronizationIfNeeded(element);
-            if (!transitionDef.sequential) {
-                synchronization.bindStart(addStartClasses);
-            }
-            synchronization.enter(function (done) {
-                if (transitionDef.sequential) {
-                    addStartClasses();
-                }
+            element = filterElementsWithParents(element);
+            synchronization = createSynchronizationIfNeeded(element.eq(0).parent(), "enter");
+            synchronization.events.preEnter.listen(function() {
+                // Set the new page to display:block but don't show it yet.
+                // This code is from jquery mobile 1.3.1, function "createHandler".
+                // Prevent flickering in phonegap container: see comments at #4024 regarding iOS
                 element.css("z-index", -10);
                 element.addClass(activePageClass + " " + toPreClass);
+            });
+            synchronization.events.enter.listen(function() {
                 // Browser has settled after setting the page to display:block.
                 // Now start the animation and show the page.
                 element.addClass(addClasses);
                 // Restores visibility of the new page: added together with $to.css( "z-index", -10 );
                 element.css("z-index", "");
                 element.removeClass(toPreClass);
-                animationComplete(element, function () {
-                    element.removeClass(removeClasses);
-                    done();
-                });
             });
-            return synchronization;
+            synchronization.events.enterDone.listen(function() {
+                element.removeClass(removeClasses);
+            });
 
-            function addStartClasses() {
-                // Set the new page to display:block but don't show it yet.
-                // This code is from jquery mobile 1.3.1, function "createHandler".
-                // Prevent flickering in phonegap container: see comments at #4024 regarding iOS
-                element.css("z-index", -10);
-                element.addClass(activePageClass + " " + toPreClass);
-            }
+            synchronization.enter();
+            return synchronization;
         }
 
         function setupLeave(element) {
-            var synchronization;
-            element = firstElement(element);
-            synchronization = createSynchronizationIfNeeded(element);
-            synchronization.leave(function (done) {
+            var synchronization,
+                origElement = element;
+            element = filterElementsWithParents(element);
+            synchronization = createSynchronizationIfNeeded(element.eq(0).parent(), "leave");
+            synchronization.events.leave.listen(function () {
                 element.addClass(addClasses);
-                animationComplete(element, function () {
-                    element.removeClass(removeClasses);
-                    done();
-                });
             });
+            synchronization.events.leaveDone.listen(function () {
+                element.removeClass(removeClasses);
+            });
+            synchronization.leave();
             return synchronization;
         }
 
         function start(element, done, synchronization) {
-            synchronization.bindEnd(done);
+            synchronization.events.end.listen(done);
         }
 
-        function createSynchronizationIfNeeded(el) {
-            var parent = el.parent(),
-                sync = parent.data("animationSync");
+        function createSynchronizationIfNeeded(parent, direction) {
+            var sync = parent.data("animationSync");
+            if (sync && sync.running[direction]) {
+                // We already have a running animation, so stop it
+                sync.stop();
+                sync = null;
+            }
             if (!sync) {
-                if (transitionDef.sequential) {
-                    sync = sequentialSynchronization();
+                if (animationDef.sequential) {
+                    sync = sequentialSynchronization(parent);
                 } else {
-                    sync = parallelSynchronization();
+                    sync = parallelSynchronization(parent);
                 }
-                sync.bindStart(function () {
+                sync.events.start.listen(function () {
                     parent.addClass(viewPortClasses);
                 });
-                sync.bindEnd(function () {
+                sync.events.end.listen(function () {
                     parent.removeClass(viewPortClasses);
                     parent.data("animationSync", null);
                 });
                 parent.data("animationSync", sync);
             }
+            sync.running = sync.running || {};
+            sync.running[direction] = true;
             return sync;
         }
 
-        function firstElement(element) {
-            var i;
+        function filterElementsWithParents(element) {
+            var i, res = angular.element();
             for (i = 0; i < element.length; i++) {
-                if (element[i].nodeType === 1) {
-                    return element.eq(i);
+                if (element[i].nodeType === 1 && element[i].parentNode) {
+                    res.push(element[i]);
                 }
             }
-            return angular.element();
+            return res;
         }
 
-        function maybeDegradeTransition(transition) {
+        function maybeDegradeAnimation(animation) {
             if (!$sniffer.cssTransform3d) {
-                // Fall back to simple transition in browsers that don't support
+                // Fall back to simple animation in browsers that don't support
                 // complex 3d animations.
-                transition = PAGE_ANIMATION_DEFS[transition].fallback;
+                animation = PAGE_ANIMATION_DEFS[animation].fallback;
             }
             if (!$sniffer.animations) {
-                transition = "none";
+                animation = "none";
             }
-            return transition;
-        }
-    }]);
-
-    function parallelSynchronization() {
-        var start = latch(),
-            startAsync = latch(),
-            end = latch(),
-            runningCount = 0;
-        start.listen(function() {
-            // setTimeout to allow
-            // the browser to settle after the new page
-            // has been set to display:block and before the css animation starts.
-            // Without this transitions are sometimes not shown,
-            // unless you call window.scrollTo or click on a link (weired dependency...)
-            window.setTimeout(function() {
-                startAsync.notify();
-            },0);
-        });
-
-        return {
-            enter: enter,
-            leave: leave,
-            bindStart: start.listen,
-            bindEnd: end.listen
-        };
-
-        function enter(delegate) {
-            setup(delegate);
+            return animation;
         }
 
-        function leave(delegate) {
-            setup(delegate);
-        }
-
-        function setup(delegate) {
-            runningCount++;
-            start.notify();
-            startAsync.listen(function() {
-                delegate(function () {
-                    runningCount--;
-                    if (runningCount === 0) {
-                        end.notify();
-                    }
-                });
+        function parallelSynchronization(parent) {
+            var events = {
+                    start: latch(),
+                    preEnter: latch(),
+                    enter: latch(),
+                    enterDone: latch(),
+                    leave: latch(),
+                    leaveDone: latch(),
+                    end: latch()
+                },
+                runningCount = 0;
+            events.start.listen(function () {
+                // setTimeout to allow
+                // the browser to settle after the new page
+                // has been set to display:block and before the css animation starts.
+                // Without this animations are sometimes not shown,
+                // unless you call window.scrollTo or click on a link (weired dependency...)
+                window.setTimeout(function () {
+                    events.enter.notify();
+                    events.leave.notify();
+                }, 0);
             });
+            events.end.listen(animationComplete(parent, onAnimationComplete));
+            events.end.listen(events.enterDone.notify);
+            events.end.listen(events.leaveDone.notify);
+            events.start.listen(events.preEnter.notify);
+
+            return {
+                enter: begin,
+                leave: begin,
+                stop: stop,
+                events: events
+            };
+
+            function begin() {
+                runningCount++;
+                events.start.notify();
+            }
+
+            function stop() {
+                events.leaveDone.notify();
+                events.enterDone.notify();
+                events.end.notify();
+            }
+
+            function onAnimationComplete() {
+                runningCount--;
+                if (runningCount === 0) {
+                    events.end.notify();
+                }
+            }
         }
 
-    }
-
-    function sequentialSynchronization() {
-        var start = latch(),
-            end = latch(),
-            enterDelegate,
-            leaveDelegate;
-        return {
-            enter: enter,
-            leave: leave,
-            bindStart: start.listen,
-            bindEnd: end.listen
-        };
-
-        function enter(delegate) {
-            enterDelegate = delegate;
-            start.notify();
+        function sequentialSynchronization(parent) {
+            var events = {
+                    start: latch(),
+                    preEnter: latch(),
+                    enter: latch(),
+                    enterDone: latch(),
+                    leave: latch(),
+                    leaveDone: latch(),
+                    end: latch()
+                },
+                hasEnter = false,
+                hasLeave = false,
+                _onAnimationComplete = angular.noop;
+            events.end.listen(animationComplete(parent, onAnimationComplete));
+            events.start.listen(events.leave.notify);
+            events.leaveDone.listen(events.preEnter.notify);
+            events.leaveDone.listen(events.enter.notify);
+            events.leaveDone.listen(function() {
+                if (hasEnter) {
+                    _onAnimationComplete = events.enterDone.notify;
+                } else {
+                    events.enterDone.notify();
+                }
+            });
             // setTimeout to detect if a leave animation has been used.
             window.setTimeout(function () {
-                if (!leaveDelegate) {
-                    enterDelegate(function () {
-                        end.notify();
-                    });
+                if (!hasLeave) {
+                    events.leaveDone.notify();
                 }
             }, 0);
-        }
+            events.enterDone.listen(events.end.notify);
 
-        function leave(delegate) {
-            leaveDelegate = delegate;
-            start.notify();
-            delegate(function () {
-                if (enterDelegate) {
-                    enterDelegate(function () {
-                        end.notify();
-                    });
-                } else {
-                    end.notify();
-                }
-            });
+            return {
+                enter: enter,
+                leave: leave,
+                stop: stop,
+                events: events
+            };
+
+            function enter() {
+                hasEnter = true;
+                events.start.notify();
+            }
+
+            function leave() {
+                hasLeave = true;
+                events.start.notify();
+                _onAnimationComplete = events.leaveDone.notify;
+            }
+
+            function stop() {
+                events.leaveDone.notify();
+                events.enterDone.notify();
+                events.end.notify();
+            }
+
+            function onAnimationComplete() {
+                _onAnimationComplete();
+            }
+
         }
-    }
+    }]);
 
     function latch() {
         var _listeners = [],
@@ -335,171 +420,270 @@ function registerPageAnimation(transitionType, reverse, direction) {
 
 
 /**
- * This directive is very similar to ngViewDirective.
- * However, it allows to cache views including their scopes using the `jqmViewCache`.
- * <p>
- * For this to work the semantics of routes were changed a little:
+ * @ngdoc directive
+ * @name jqm.directive:jqmButton
+ * @restrict A
  *
- * 1. If a route for a cached template is activated, the template and it's scope are taken from the cache.
- *    If the template is not yet cached, it is compiled and then added to the cache.
- * 2. If a route is left, it's scope is disconnected, if it's activated, the scope gets reconnected.
- * 3. All templates that are in `$templateCache` are compiled with a new disconnected scope
- *    when this directive is created.
- * 4. Route controllers are created only on the first time it's route is activated.
- *    Afterwards, they may listen to the `$viewContentLoaded` to be notified that
- *    their route is activated again.
- * <p>
- * Implementation notes:
+ * @description
+ * Creates a jquery mobile button on the given element.
  *
- * - controllers are not instantiated on startup but on the first matching route, as it's not easy
- *   to determine them from the routes in advance, as routes may use default routes, functions for the
- *   `templateUrl` property, ...
+ * If created on an anchor `<a>` tag, the button will be treated as a link button.
+ *
+ * @param {submit|reset=} jqmButton The button type - if specified, the button will be treated as an input with the given value as its type. Otherwise, the button will just be a normal button.
+ * @param {string=} icon Defines an icon for the button
+ * @param {left|right|top|bottom=} iconpos Defines the Position of the icon, default is 'left'
+ * @param {boolean=} mini Whether or not to use the mini layout
+ * @param {boolean=} inline Whether or not to make the button inline (smaller)
+ * @param {boolean=} shadow Whether or not to give the button shadows (default true)
+ * @param {boolean=} corners Whether or not to give the button shadows (default true)
+ *
+ * @example
+<example module="jqm">
+  <file name="index.html">
+    <div>
+        <div jqm-button icon="ui-icon-search" ng-click>Do some search</div>
+        <a jqm-button icon="ui-icon-home" data-mini="true" href="#/api" ng-click>Go home, mini!</a>
+        <hr />
+        <h3>Form With Vertical Group</h3>
+        <form action="http://foobar3000.com/echo" method="GET">
+          <div jqm-textinput ng-model="$root.value" ng-init="$root.value='banana'" name="stuff"></div>
+          <div jqm-controlgroup>
+            <div jqm-button="submit" ng-click icon="ui-icon-check" iconpos="right">Submit to foobar3030.com</div>
+            <div jqm-button="reset" ng-click icon="ui-icon-minus" iconpos="right">"reset" it away!</div>
+          </div>
+        </form>
+        <hr />
+        <h3>Horizontal Group</h3>
+        <div jqm-controlgroup type="horizontal">
+          <div jqm-button ng-click>One</div>
+          <div jqm-button ng-click>Two</div>
+          <div jqm-button ng-click>Three</div>
+        </div>
+    </div>
+  </file>
+</example>
  */
-jqmModule.directive('jqmCachingView', ['$jqmViewCache', '$templateCache', '$route', '$anchorScroll', '$compile',
-    '$controller', '$animator',
-    function (jqmViewCache, $templateCache, $route, $anchorScroll, $compile, $controller, $animator) {
-        return {
-            restrict: 'ECA',
-            terminal: true,
-            link: function (scope, element, attr) {
-                precompileTemplateCache();
-
-                var lastScope,
-                    onloadExp = attr.onload || '',
-                    animate = $animator(scope, attr);
-
-                scope.$on('$routeChangeSuccess', update);
-                update();
-
-
-                function destroyLastScope() {
-                    if (lastScope) {
-                        lastScope.$disconnect();
-                        lastScope = null;
-                    }
-                }
-
-                function clearContent() {
-
-                    var contents = element.contents();
-                    contents.remove = detachNodes;
-                    animate.leave(contents, element);
-                    destroyLastScope();
-
-                    // Note: element.remove() would
-                    // destroy all data associated to those nodes,
-                    // e.g. widgets, ...
-                    function detachNodes() {
-                        /*jshint -W040:true*/
-                        var i, node, parent;
-                        for (i=0; i<this.length; i++) {
-                            node = this[i];
-                            parent = node.parentNode;
-                            if (parent) {
-                                parent.removeChild(node);
-                            }
-                        }
-                    }
-                }
-
-                function update() {
-                    var locals = $route.current && $route.current.locals,
-                        template = locals && locals.$template;
-
-                    if (template) {
-                        var current = $route.current,
-                            controller,
-                            cacheEntry;
-                        // New in jqmCachingView:
-                        // We need to wait for directives that use templateUrl,
-                        // even if they are cached (as they need an extra $q tick).
-                        scope.$watch('$$viewReady', contentLoaded);
-                        cacheEntry = compileTemplateIfNeeded(current.loadedTemplateUrl, template);
-                    } else {
-                        clearContent();
-                    }
-
-                    function contentLoaded() {
-                        clearContent();
-                        animate.enter(cacheEntry.elements, element);
-                        lastScope = current.scope = cacheEntry.scope;
-                        lastScope.$reconnect();
-                        if (current.controller) {
-                            controller = cacheEntry.controller;
-                            locals.$scope = lastScope;
-                            if (!controller) {
-                                controller = cacheEntry.controller = $controller(current.controller, locals);
-                                if (current.controllerAs) {
-                                    lastScope[current.controllerAs] = controller;
-                                }
-                                element.children().data('$ngControllerController', controller);
-                            }
-                        }
-                        lastScope.$emit('$viewContentLoaded', cacheEntry.elements);
-                        lastScope.$eval(onloadExp);
-                        // $anchorScroll might listen on event...
-                        $anchorScroll();
-                    }
-                }
-
-                function precompileTemplateCache() {
-                    var urls = $templateCache.keys();
-                    angular.forEach(urls, function (url) {
-                        var template, ctrlFn;
-                        template = stringToElement($templateCache.get(url));
-                        if (angular.isDefined(template.attr('jqm-page')) || angular.isDefined(template.attr('data-jqm-page'))) {
-                            compileTemplateIfNeeded(url, template);
-                        }
-                    });
-                }
-
-                function stringToElement(string) {
-                    if (string.html) {
-                        return string;
-                    }
-                    return angular.element('<div></div>').html(string).contents();
-                }
-
-                function compileTemplateIfNeeded(templateUrl, template) {
-                    var enterElements, link, childScope,
-                        locals = {},
-                        cacheEntry;
-
-                    cacheEntry = jqmViewCache.get(templateUrl);
-                    if (!cacheEntry) {
-                        enterElements = stringToElement(template);
-                        // take first element (e.g. non text node)...
-                        enterElements.children().eq(0).parent().attr('view-ready', 'true');
-
-                        link = $compile(enterElements);
-
-                        childScope = scope.$new();
-                        childScope.$disconnect();
-                        link(childScope);
-                        cacheEntry = {
-                            elements: enterElements,
-                            scope: childScope
-                        };
-                        if (templateUrl) {
-                            jqmViewCache.put(templateUrl, cacheEntry);
-                        }
-                    }
-                    return cacheEntry;
-                }
-            }
-        };
-    }]);
-// New in jqmCachingView:
-// helper directive to detect when a view has really been loaded,
-// as it might contain directives with a templateUrl.
-jqmModule.directive('viewReady', function() {
+jqmModule.directive('jqmButton', ['jqmClassDirective', 'jqmOnceClassDirective', function(jqmClassDirectives, jqmOnceClassDirectives) {
+    var isDef = angular.isDefined;
     return {
         restrict: 'A',
-        link: function($scope) {
-            $scope.$$viewReady = true;
+        transclude: true,
+        templateUrl: 'templates/jqmButton.html',
+        scope: {
+            iconpos: '@',
+            icon: '@',
+            mini: '@',
+            shadow: '@',
+            corners: '@',
+            inline: '@'
+        },
+        require: '^?jqmControlGroup',
+        compile: function(elm, attr) {
+            attr.shadow = isDef(attr.shadow) ? attr.shadow==='true' : 'true';
+            attr.corners = isDef(attr.corners) ? attr.corners==='true' : 'true';
+
+            elm[0].className += ' ui-btn';
+            attr.$set('jqmOnceClass', "{{$scopeAs.jqmBtn.getIconPos() ? 'ui-btn-icon-'+$scopeAs.jqmBtn.getIconPos() : ''}}");
+            attr.$set('jqmClass',
+                "{'ui-first-child': $scopeAs.jqmBtn.$position.first," +
+                "'ui-submit': $scopeAs.jqmBtn.type," +
+                "'ui-last-child': $scopeAs.jqmBtn.$position.last," +
+                "'ui-shadow': $scopeAs.jqmBtn.shadow," +
+                "'ui-btn-corner-all': $scopeAs.jqmBtn.corners," +
+                "'ui-mini': $scopeAs.jqmBtn.isMini()," +
+                "'ui-btn-inline': $scopeAs.jqmBtn.isInline()}"
+            );
+
+            if (elm[0].tagName.toLowerCase() === 'input') {
+                //Inputs can't have templates inside of them so throw an error
+                throw new Error("Cannot have jqm-button <input> - use <button> instead!");
+            }
+
+            //Eg <div jqm-button="submit"> --> we put a <input type="submit"> inside
+            var buttonEl;
+            if (attr.jqmButton) {
+                buttonEl = angular.element('<button>');
+                buttonEl.addClass('ui-btn-hidden');
+                buttonEl.attr("type", attr.jqmButton);
+                if (attr.name) {
+                    buttonEl.attr("name", attr.name);
+                }
+                if (attr.ngDisabled) {
+                    buttonEl.attr('ngDisabled', attr.ngDisabled);
+                } else if (attr.disabled) {
+                    buttonEl.attr('disabled', attr.disabled);
+                }
+                elm.append(buttonEl);
+            }
+
+            return function(scope, elm, attr, controlGroup) {
+
+                scope.$$scopeAs = 'jqmBtn';
+                scope.isMini = isMini;
+                scope.getIconPos = getIconPos;
+                scope.isInline = isInline;
+                scope.type = attr.jqmButton;
+
+                angular.forEach(jqmClassDirectives, function(directive) {
+                    directive.link(scope, elm, attr);
+                });
+                angular.forEach(jqmOnceClassDirectives, function(directive) {
+                    directive.link(scope, elm, attr);
+                });
+
+                function isMini() {
+                    return scope.mini || (controlGroup && controlGroup.$scope.mini);
+                }
+                function getIconPos() {
+                    return scope.iconpos || (controlGroup && controlGroup.$scope.iconpos) || (scope.icon ? 'left' : '');
+                }
+                function isInline() {
+                    return (controlGroup && controlGroup.$scope.type === "horizontal") || scope.inline;
+                }
+
+            };
         }
     };
-});
+}]);
+
+/**
+ * @ngdoc directive
+ * @name jqm.directive:jqmCachingView
+ * @restrict ECA
+ *
+ * @description
+ * # Overview
+ * `jqmCachingView` extends `jqmView` in the following way:
+ *
+ * - views are only compiled once and then stored in the `jqmViewCache`. By this, changes between views are very fast.
+ * - controllers are still instantiated on every route change. Their changes to the scope get cleared
+ *   when the view is left.
+ *
+ * Side effects:
+ * - For animations between multiple routes that use the same template add the attribute `allow-same-view-animation`
+ *   to the root of your view. Background: The DOM nodes and scope of the compiled template are reused for every view.
+ *   With this attribute `jqmCachingView` will create two instances of the template internally.
+ *   Example: Click on Moby and directly after this on Gatsby. Both routes use the same template and therefore
+ *   the template has to contain `allow-same-view-animation`.
+ *
+ * @requires jqmViewCache
+ *
+ * @param {expression=} jqmCachingView angular expression evaluating to a route (optional). See `jqmView` for details.
+ * @scope
+ * @example
+    <example module="jqmView">
+      <file name="index.html">
+          Choose:
+          <a href="#/Book/Moby">Moby</a> |
+          <a href="#/Book/Moby/ch/1">Moby: Ch1</a> |
+          <a href="#/Book/Gatsby">Gatsby</a> |
+          <a href="#/Book/Gatsby/ch/4?key=value">Gatsby: Ch4</a> |
+          <a href="#/Book/Scarlet">Scarlet Letter</a><br/>
+
+          <div jqm-caching-view style="height:300px"></div>
+      </file>
+
+      <file name="book.html">
+        <div jqm-page allow-same-view-animation>
+          <div jqm-header><h1>Book {{book.params.bookId}}</h1></div>
+          The book contains ...
+        </div>
+      </file>
+
+      <file name="chapter.html">
+        <div jqm-page allow-same-view-animation>
+          <div jqm-header><h1>Chapter {{chapter.params.chapterId}} of {{chapter.params.bookId}}</h1></div>
+          This chapter contains ...
+        </div>
+      </file>
+
+      <file name="script.js">
+        angular.module('jqmView', ['jqm'], function($routeProvider) {
+          $routeProvider.when('/Book/:bookId', {
+            templateUrl: 'book.html',
+            controller: BookCntl,
+            controllerAs: 'book',
+            animation: 'page-slide'
+          });
+          $routeProvider.when('/Book/:bookId/ch/:chapterId', {
+            templateUrl: 'chapter.html',
+            controller: ChapterCntl,
+            controllerAs: 'chapter',
+            animation: 'page-slide'
+          });
+        });
+
+        function BookCntl($routeParams) {
+          this.params = $routeParams;
+        }
+
+        function ChapterCntl($routeParams) {
+          this.params = $routeParams;
+        }
+      </file>
+    </example>
+*/
+jqmModule.directive('jqmCachingView', ['jqmViewDirective', 'jqmViewCache', '$injector',
+    function (jqmViewDirectives, jqmViewCache, $injector) {
+        return {
+            restrict: 'ECA',
+            controller: ['$scope', JqmCachingViewCtrl],
+            require: 'jqmCachingView',
+            compile: function(element, attr) {
+                var links = [];
+                angular.forEach(jqmViewDirectives, function (directive) {
+                    links.push(directive.compile(element, attr));
+                });
+                return function (scope, element, attr, ctrl) {
+                    angular.forEach(links, function (link) {
+                        link(scope, element, attr, ctrl);
+                    });
+                };
+            }
+        };
+
+        function JqmCachingViewCtrl($scope) {
+            var self = this;
+            angular.forEach(jqmViewDirectives, function (directive) {
+                $injector.invoke(directive.controller, self, {$scope: $scope});
+            });
+            this.loadAndCompile = loadAndCompile;
+            this.watchAttrName = 'jqmCachingView';
+            this.onClearContent = onClearContent;
+
+            // --------
+
+            function loadAndCompile(templateUrl) {
+                return jqmViewCache.load($scope, templateUrl).then(function (cacheEntry) {
+                    var templateInstance = cacheEntry.next();
+                    templateInstance.scope.$reconnect();
+                    return templateInstance;
+                });
+            }
+
+            function onClearContent(contents) {
+                // Don't destroy the data of the elements when they are removed
+                contents.remove = detachNodes;
+            }
+
+        }
+
+        // Note: element.remove() would
+        // destroy all data associated to those nodes,
+        // e.g. widgets, ...
+        function detachNodes() {
+            /*jshint -W040:true*/
+            var i, node, parent;
+            for (i = 0; i < this.length; i++) {
+                node = this[i];
+                parent = node.parentNode;
+                if (parent) {
+                    parent.removeChild(node);
+                }
+            }
+        }
+}]);
+
 /**
  * @ngdoc directive
  * @name jqm.directive:jqmCheckbox
@@ -609,33 +793,35 @@ jqmModule.directive('jqmCheckbox', [function () {
 }]);
 
 jqmModule.directive('jqmClass', [function() {
-    return function(scope, element, attr) {
-        var oldVal;
+    return {
+        link: function(scope, element, attr) {
+            var oldVal;
 
-        scope.$watch(attr.jqmClass, jqmClassWatchAction, true);
+            scope.$watch(attr.jqmClass, jqmClassWatchAction, true);
 
-        attr.$observe('class', function(value) {
-            var jqmClass = scope.$eval(attr.jqmClass);
-            jqmClassWatchAction(jqmClass);
-        });
+            attr.$observe('class', function(value) {
+                var jqmClass = scope.$eval(attr.jqmClass);
+                jqmClassWatchAction(jqmClass);
+            });
 
-        function jqmClassWatchAction(newVal) {
-            if (oldVal && !angular.equals(newVal,oldVal)) {
-                changeClass('removeClass', oldVal);
+            function jqmClassWatchAction(newVal) {
+                if (oldVal && !angular.equals(newVal,oldVal)) {
+                    changeClass('removeClass', oldVal);
+                }
+                changeClass('addClass', newVal);
+                oldVal = angular.copy(newVal);
             }
-            changeClass('addClass', newVal);
-            oldVal = angular.copy(newVal);
-        }
 
-        function changeClass(fn, classVal) {
-            if (angular.isObject(classVal) && !angular.isArray(classVal)) {
-                var classes = [];
-                angular.forEach(classVal, function(v, k) {
-                    if (v) { classes.push(k); }
-                });
-                classVal = classes;
+            function changeClass(fn, classVal) {
+                if (angular.isObject(classVal) && !angular.isArray(classVal)) {
+                    var classes = [];
+                    angular.forEach(classVal, function(v, k) {
+                        if (v) { classes.push(k); }
+                    });
+                    classVal = classes;
+                }
+                element[fn](angular.isArray(classVal) ? classVal.join(' ') : classVal);
             }
-            element[fn](angular.isArray(classVal) ? classVal.join(' ') : classVal);
         }
     };
 }]);
@@ -671,19 +857,33 @@ jqmModule.directive('jqmControlgroup', function() {
  *
  * Anything inside the `jqm-flip` tag will be a label.
  *
+ * Labels for the on and off state can be omitted.
+ * If no values for the on and off state are specified on will be bound to true and off to false.
+ *
+ * A theme can be set with the jqm-theme directive and specific styles can be set with the ng-style parameter.
+ * This is necessary to extend the width of the flip for long labels.
+ *
  * @param {expression=} ngModel Assignable angular expression to data-bind to.
  * @param {string=} disabled Whether this flip switch is disabled.
- * @param {string=} ngOnLabel The label which should be shown when fliped on.
- * @param {string=} ngOnValue The value to which the expression should be set when fliped on.
- * @param {string=} ngOffLabel The label which should be shown when fliped off.
- * @param {string=} ngOffValue The value to which the expression should be set when fliped off.
+ * @param {string=} mini Whether this flip should be displayed minified.
+ * @param {string=} ngOnLabel The label which should be shown when fliped on (optional).
+ * @param {string=} ngOnValue The value to which the expression should be set when fliped on (optional, default: true).
+ * @param {string=} ngOffLabel The label which should be shown when fliped off (optional).
+ * @param {string=} ngOffValue The value to which the expression should be set when fliped off (optional, default:false).
  *
  * @example
 <example module="jqm">
   <file name="index.html">
-    <div jqm-flip ng-model="flip" on-label="On" on-value="1" off-label="Off" off-value="0">
-      My value is: {{flip}}
-    </div>
+   <p>Selected value is: {{flip}}</p>
+   <div jqm-flip ng-model="flip">
+     Default values true/false
+   </div>
+   <div jqm-flip ng-model="flip" jqm-theme="e">
+     With theme
+   </div>
+   <div jqm-flip ng-model="flip2" on-label="On" on-value="On" off-label="Off" off-value="Off">
+     My value is {{flip2}}
+   </div>
   </file>
 </example>
  */
@@ -705,39 +905,63 @@ jqmModule.directive('jqmFlip', [function () {
         link: function (scope, element, attr, ctrls) {
             var ngModelCtrl = ctrls[0];
             var jqmControlGroupCtrl = ctrls[1];
+            var parsedOn;
+            var parsedOff;
 
             scope.theme = scope.$theme || 'c';
             scope.isMini = isMini;
+            scope.onValue = angular.isDefined(attr.onValue) ? scope.onValue : true;
+            scope.offValue = angular.isDefined(attr.offValue) ? scope.offValue : false;
 
             initToggleState();
             bindClick();
 
             function initToggleState () {
+                ngModelCtrl.$parsers.push(parseBoolean);
+                parsedOn = parseBoolean(scope.onValue);
+                parsedOff = parseBoolean(scope.offValue);
                 ngModelCtrl.$render = updateToggleStyle;
                 ngModelCtrl.$viewChangeListeners.push(updateToggleStyle);
             }
 
             function updateToggleStyle () {
+                updateNaNAsOffValue();
                 var toggled = isToggled();
                 scope.toggleLabel = toggled ? scope.onLabel : scope.offLabel;
                 scope.onStyle = toggled ? 100 : 0;
                 scope.offStyle = toggled ? 0 : 100;
             }
 
+            // this has to be done in the change listener,
+            // otherwise the potential scope value would be overwritten with the off value
+            function updateNaNAsOffValue () {
+                if (!ngModelCtrl.$viewValue) {
+                    ngModelCtrl.$setViewValue(parsedOff);
+                }
+            }
+
             function bindClick () {
                 scope.toggle = function () {
-                    ngModelCtrl.$setViewValue(isToggled() ? scope.offValue : scope.onValue);
+                    ngModelCtrl.$setViewValue(isToggled() ? parsedOff : parsedOn);
                 };
             }
 
             function isToggled () {
-                return ngModelCtrl.$viewValue === scope.onValue;
+                return ngModelCtrl.$viewValue === parsedOn;
             }
 
             function isMini() {
                 return scope.mini || (jqmControlGroupCtrl && jqmControlGroupCtrl.$scope.mini);
             }
 
+            function parseBoolean(value) {
+                if (value === 'true') {
+                    return true;
+                } else if (value === 'false') {
+                    return false;
+                }
+                return value;
+            }
         }
     };
 }]);
@@ -748,7 +972,7 @@ jqmModule.directive('jqmFlip', [function () {
  * @restrict A
  *
  * @description
- * Defines the footer of a `jqm-page`.
+ * Defines the footer of a `jqm-page`. For a persistent footer, put the footer directly below `jqmView` / `jqmCachingView`.
  *
  * @example
  <example module="jqm">
@@ -762,31 +986,31 @@ jqmModule.directive('jqmFlip', [function () {
  </file>
  </example>
  */
-jqmModule.directive('jqmFooter', function () {
+jqmModule.directive('jqmFooter', ['jqmConfig', function (jqmConfig) {
     return {
         restrict: 'A',
         // Own scope as we have a different default theme
         // than the page.
         scope: true,
-        require: '^jqmPage',
         controller: angular.noop,
-        link: function (scope, element, attr, jqmPageCtrl) {
-            jqmPageCtrl.footer = element;
+        link: function (scope, element, attr) {
+            element.parent().data('jqmFooter', element);
             var hasExplicitTheme = scope.hasOwnProperty('$theme');
             if (!hasExplicitTheme) {
-                scope.$theme = 'a';
+                scope.$theme = jqmConfig.secondaryTheme;
             }
             element.addClass("ui-footer ui-bar-"+scope.$theme);
         }
     };
-});
+}]);
+
 /**
  * @ngdoc directive
  * @name jqm.directive:jqmHeader
  * @restrict A
  *
  * @description
- * Defines the header of a `jqm-page`.
+ * Defines the header of a `jqm-page`. For a persistent header, put the header directly below `jqmView` / `jqmCachingView`.
  *
  * @example
  <example module="jqm">
@@ -800,24 +1024,23 @@ jqmModule.directive('jqmFooter', function () {
  </file>
  </example>
  */
-jqmModule.directive('jqmHeader', function () {
+jqmModule.directive('jqmHeader', ['jqmConfig', function (jqmConfig) {
     return {
         restrict: 'A',
         // Own scope as we have a different default theme
         // than the page.
         scope: true,
-        require: '^jqmPage',
         controller: angular.noop,
-        link: function (scope, element, attr, jqmPageCtrl) {
-            jqmPageCtrl.header = element;
+        link: function (scope, element, attr) {
+            element.parent().data("jqmHeader", element);
             var hasExplicitTheme = scope.hasOwnProperty('$theme');
             if (!hasExplicitTheme) {
-                scope.$theme = 'a';
+                scope.$theme = jqmConfig.secondaryTheme;
             }
             element.addClass("ui-header ui-bar-"+scope.$theme);
         }
     };
-});
+}]);
 
 angular.forEach(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'h7'], function (headerName) {
     jqmModule.directive(headerName, hxDirective);
@@ -839,6 +1062,7 @@ function hxDirective() {
         }
     };
 }
+
 
 jqmModule.directive({
     jqmLiEntry: jqmLiEntryDirective(false),
@@ -907,33 +1131,13 @@ jqmModule.directive('jqmListview', [function() {
     };
 }]);
 
-/**
- * @ngdoc directive
- * @name jqm.directive:jqmOnceClass
- * @restrict A
- *
- * @description
- * Sets the given class string once, with no watching.
- *
- * @example
- <example module="jqm">
- <file name="index.html">
-   <div ng-init="someClass='a'" jqm-once-class="{{someClass}}">
-       <input type="text" ng-model="someClass">
-   </div>
- </file>
- </example>
+/*
+ * This is intentionally not documented; internal use only
  */
 jqmModule.directive('jqmOnceClass', ['$interpolate', function($interpolate) {
     return {
-        compile: function(element, iAttr) {
-            //We have to catch the attr value before angular tries to compile it
-            var classAttr = $interpolate(iAttr.jqmOnceClass);
-            if (classAttr) {
-                return function postLink(scope, element, attr) {
-                    element.addClass( classAttr(scope) );
-                };
-            }
+        link: function(scope, elm, attr) {
+            elm.addClass( $interpolate(attr.jqmOnceClass)(scope) );
         }
     };
 }]);
@@ -950,220 +1154,271 @@ jqmModule.directive('jqmOnceClass', ['$interpolate', function($interpolate) {
  <example module="jqm">
  <file name="index.html">
  <div jqm-page class="jqm-standalone-page" style="height: 100px;">
-     <p>Hello world!</p>
-     <p>New Line</p>
-     <p>New Line</p>
-     <p>New Line</p>
-     <p>New Line</p>
-     <p>New Line</p>
-     <p>New Line</p>
-     <p>New Line</p>
-     <p>New Line</p>
-     <p>New Line</p>
-     <p>New Line</p>
+ <p>Hello world!</p>
+ <p>New Line</p>
+ <p>New Line</p>
+ <p>New Line</p>
+ <p>New Line</p>
+ <p>New Line</p>
+ <p>New Line</p>
+ <p>New Line</p>
+ <p>New Line</p>
+ <p>New Line</p>
+ <p>New Line</p>
  </div>
  </file>
  </example>
  */
-jqmModule.directive('jqmPage', ['$scroller', function ($scroller) {
+jqmModule.directive('jqmPage', ['jqmScrollableDirective', '$rootScope', function (jqmScrollableDirectives, $rootScope) {
     return {
         restrict: 'A',
         require: 'jqmPage',
         controller: angular.noop,
         // Note: We are not using a template here by purpose,
         // so that other directives like dialog may reuse this directive in a template themselves.
-        compile: function(cElement, cAttr) {
+        compile: function (cElement, cAttr) {
             var content = angular.element('<div class="ui-content"></div>');
             content.append(cElement.contents());
             cElement.append(content);
             cElement.addClass("ui-page");
-            return function(scope, lElement, lAttr, jqmPageCtrl) {
-                lElement.addClass("ui-body-"+scope.$theme);
+            return function (scope, lElement, lAttr, jqmPageCtrl) {
                 var content = lElement.children();
-                if (jqmPageCtrl.header) {
+                lElement.addClass("ui-body-" + scope.$theme);
+                addAndRemoveParentDependingClasses(scope, lElement, content);
+                if (content.data("jqmHeader")) {
                     content.addClass('jqm-content-with-header');
-                    lElement.prepend(jqmPageCtrl.header);
+                    lElement.prepend(content.data("jqmHeader"));
                 }
-                if (jqmPageCtrl.footer) {
+                if (content.data("jqmFooter")) {
                     content.addClass('jqm-content-with-footer');
-                    lElement.append(jqmPageCtrl.footer);
+                    lElement.append(content.data("jqmFooter"));
                 }
                 // Don't use scrolly-scroll directive here by purpose,
                 // as it is swallowing all mousemove events, which prevents
                 // the address bar to be shown using a scroll on the page header.
-                $scroller(content);
+                angular.forEach(jqmScrollableDirectives, function (jqmScrollableDirective) {
+                    jqmScrollableDirective.link(scope, content, lAttr);
+                });
             };
+
+            function addAndRemoveParentDependingClasses(scope, lElement, content) {
+                var viewContentLoadedOff = $rootScope.$on('$viewContentLoaded', function (event, pageNodes) {
+                    // Note: pageNodes may contain text nodes as well as our page.
+                    var pageEl;
+                    angular.forEach(pageNodes, function (pageNode) {
+                        if (pageNode === lElement[0]) {
+                            pageEl = pageNode;
+                        }
+                    });
+                    // Note: checking event.targetScope===scope does not work when we put a jqm-theme on the page.
+                    if (pageEl) {
+                        lElement.parent().addClass("ui-overlay-" + scope.$theme);
+                        if (lElement.parent().data("jqmHeader")) {
+                            content.addClass("jqm-content-with-header");
+                        }
+                        if (lElement.parent().data("jqmFooter")) {
+                            content.addClass("jqm-content-with-footer");
+                        }
+                        lElement.parent().addClass("ui-mobile-viewport");
+                    }
+                });
+                scope.$on('$destroy', viewContentLoadedOff);
+            }
         }
     };
 }]);
-
 /**
  * @ngdoc directive
  * @name jqm.directive:jqmPanel
  * @restrict A
  *
  * @description
- * Creates a jquery mobile panel.  Must be placed outside of a jqm-viewport.
+ * Creates a jquery mobile panel.  Must be placed inside of a jqm-panel-container.
  *
  * @param {expression=} opened Assignable angular expression to data-bind the panel's open state to.
  * @param {string=} display Default 'reveal'.  What display type the panel has. Available: 'reveal', 'overlay', 'push'.
  * @param {string=} position Default 'left'. What position the panel is in. Available: 'left', 'right'.
  *
- * </ul>
- * ### $panel Scope
+ * @require jqmPanelContainer.
+ */
+jqmModule.directive('jqmPanel', function() {
+    var isDef = angular.isDefined;
+    return {
+        restrict: 'A',
+        require: '^jqmPanelContainer',
+        replace: true,
+        transclude: true,
+        templateUrl: 'templates/jqmPanel.html',
+        // marker controller.
+        controller: angular.noop,
+        scope: {
+            display: '@',
+            position: '@'
+        },
+        compile: function(element, attr) {
+            attr.display = isDef(attr.display) ? attr.display : 'reveal';
+            attr.position = isDef(attr.position) ? attr.position : 'left';
+
+            return function(scope, element, attr, jqmPanelContainerCtrl) {
+                if (scope.position !== 'left' && scope.position !== 'right') {
+                    throw new Error("jqm-panel position is invalid. Expected 'left' or 'right', got '"+scope.position+"'");
+                }
+                jqmPanelContainerCtrl.addPanel({
+                    scope: scope,
+                    element: element
+                });
+            };
+        }
+    };
+});
+
+/**
+ * @ngdoc directive
+ * @name jqm.directive:jqmPanelContainer
+ * @restrict A
  *
- * The jqm-panel directive will create a `$panel` object on the current scope.
+ * @description
+ * A container for jquery mobile panels.
  *
- * If a `position="left"` jqm-panel is created, `scope.$panel.left` will be populated with that panel's data. If a `position="right"` jqm-panel is created, `scope.$panel.right` will be populated.  scope.$panel.left and scope.$panel.right are objects with the following properties:
+ * If you wish to use this with a view, you want the jqm-panel-container as the
+ * parent of your view and your panels. For example:
+ * <pre>
+ * <div jqm-panel-container="myPanel">
+ *   <div jqm-panel>My Panel!</div>
+ *   <div jqm-view></div>
+ * </div>
+ * </pre>
  *
- *  - `{boolean}` `opened` - Data-bound value saying whether this panel is currently opened.
- *  - `{void}` `toggle()` - Flips the panel's `opened` state.
- *  - `{string}` `display` - The current display of the panel.
- *  - `{string}` `position` - The current position of the panel.
+ * @param {expression=} jqmPanelContainer Assignable angular expression to data-bind the panel's open state to.
+ *                      This is either `left` (show left panel), `right` (show right panel) or null.
  *
  * @example
 <example module="jqm">
   <file name="index.html">
-    <div jqm-panel>
-      Hello, left panel!
-    </div>
-    <div jqm-viewport>
-      <div jqm-page>
-        <div jqm-header>Panel Demo</div>
-        Hello!
-        <div jqm-flip ng-model="$panel.left.opened">
-          Left panel opened?
+     <div ng-init="state={}"></div>
+     <div jqm-panel-container="state.openPanel" style="height:300px;overflow:hidden">
+        <div jqm-panel position="left">
+          Hello, left panel!
         </div>
-        <div jqm-flip ng-model="$panel.right.opened">
-          Right panel opened?
+        <div jqm-panel position="right" display="overlay">
+         Hello, right panel!
         </div>
-      </div>
-    </div>
-    <div jqm-panel position="right" display="overlay">
-      Right panel!
-    </div>
+        <div style="background: white">
+           Opened panel: {{state.openPanel}}
+           <button ng-click="state.openPanel='left'">Open left</button>
+           <button ng-click="state.openPanel='right'">Open right</button>
+        </div>
+     </div>
   </file>
 </example>
  */
-jqmModule.directive('jqmPanel', ['$transitionComplete', '$window', function(transitionComplete, $window) {
-    var isdef = angular.isDefined;
+
+ jqmModule.directive('jqmPanelContainer', function () {
     return {
         restrict: 'A',
-        require: '^?jqmViewport',
-        replace: true,
-        transclude: true,
-        templateUrl: 'templates/jqmPanel.html',
         scope: {
-            display: '@',
-            position: '@',
-            opened: '=?'
+            openPanelName: '=jqmPanelContainer'
         },
-        compile: function(element, attr) {
-            attr.display = isdef(attr.display) ? attr.display : 'reveal';
-            attr.position = isdef(attr.position) ? attr.position : 'left';
-
-            return function(scope, element, attr, jqmPageCtrl) {
-                var $panel = scope.$parent.$panel = scope.$parent.$panel || {};
-                var container = element.parent();
-
-                if (jqmPageCtrl) {
-                    throw new Error("jqm-panel cannot be inside of jqm-viewport. Instead, place it as a sibling of a jqm-viewport, outside.");
-                }
-                if (scope.position !== 'left' && scope.position !== 'right') {
-                    throw new Error("jqm-panel position is invalid. Expected 'left' or 'right', got '"+scope.position+"'");
-                }
-
-                $panel[scope.position] = scope;
-                scope.toggle = toggle;
-                scope.$watch('opened', watchOpened);
-
-                function watchOpened(isOpen) {
-                    if (isOpen) {
-                        var other = otherPanel();
-                        if (other && other.opened) {
-                            other.opened = false;
-                        }
-                        element.removeClass('ui-panel-closed');
-                        $window.setTimeout(function() {
-                            element.addClass('ui-panel-open');
-                            transitionComplete(transitionEls(), onChangeDone, true);
-                        }, 1);
-                    } else {
-                        element.removeClass('ui-panel-open ui-panel-opened');
-                        transitionComplete(transitionEls(), onChangeDone, true);
-                    }
-                }
-                function onChangeDone() {
-                    if (scope.opened) {
-                        element.addClass('ui-panel-opened');
-                    } else {
-                        element.addClass('ui-panel-closed');
-                    }
-                }
-                function otherPanel() {
-                    return $panel[scope.position === 'left' ? 'right' : 'left'];
-                }
-                function transitionEls() {
-                    //We need to listen for transition complete event on either the panel
-                    //element or the panel content wrapper element. Some panel display
-                    //types (overlay) only animate the panel, and some (reveal) only
-                    //animate the content wrapper.
-                    return $panel.$contentWrapNode ?
-                        angular.element([element[0], $panel.$contentWrapNode]) :
-                        element;
-                }
-                function toggle() {
-                    scope.opened = !scope.opened;
-                }
-            };
-        }
+        transclude: true,
+        templateUrl: 'templates/jqmPanelContainer.html',
+        replace: true
     };
-}]);
-
-
-jqmModule.directive('jqmPanelContentWrap', ['$compile', function($compile) {
-    var panelDismissTpl = '<div class="ui-panel-dismiss" ' +
-        'ng-click="$panel.left.opened = false; $panel.right.opened = false" ' +
-        'ng-class="($panel.left.opened || $panel.right.opened) ? \'ui-panel-dismiss-open\' : \'\'" ' +
-        '></div>';
-
+});
+// Separate directive for the controller as we can't inject a controller from a directive with templateUrl
+// into children!
+jqmModule.directive('jqmPanelContainer', ['$timeout', '$transitionComplete', '$sniffer', function ($timeout, $transitionComplete, $sniffer) {
     return {
-        link: function(scope, element, attr) {
-            var panelDismissEl = $compile(panelDismissTpl)(scope);
+        restrict: 'A',
+        controller: ['$scope', '$element', JqmPanelContainerCtrl],
+        link: function(scope, element, attr, jqmPanelContainerCtrl) {
+            jqmPanelContainerCtrl.setContent(findPanelContent());
 
-            scope.$watch(openPanelWatch, openPanelChanged);
-            element.parent().append(panelDismissEl);
-
-            function openPanelWatch() {
-                if (!scope.$panel) { return; }
-                scope.$panel.$contentWrapNode = element[0];
-
-                return (scope.$panel.left && scope.$panel.left.opened && scope.$panel.left) ||
-                    (scope.$panel.right && scope.$panel.right.opened && scope.$panel.right);
-            }
-
-            function openPanelChanged(openPanel, oldOpenPanel) {
-                if (!scope.$panel) { return; }
-
-                element.addClass('ui-panel-content-wrap ui-panel-animate');
-
-                element.toggleClass('ui-panel-content-wrap-open', !!openPanel);
-
-                element.toggleClass('ui-panel-content-wrap-position-left',
-                    !!(scope.$panel.left && openPanel === scope.$panel.left));
-
-                element.toggleClass('ui-panel-content-wrap-position-right',
-                    !!(scope.$panel.right && openPanel === scope.$panel.right));
-
-                element.toggleClass('ui-panel-content-wrap-display-reveal',
-                    !!(openPanel && openPanel.display === 'reveal'));
-                element.toggleClass('ui-panel-content-wrap-display-push',
-                    !!(openPanel && openPanel.display === 'push'));
-                element.toggleClass('ui-panel-content-wrap-display-overlay',
-                    !!(openPanel && openPanel.display === 'overlay'));
+            function findPanelContent() {
+                var content = angular.element();
+                angular.forEach(element.children(), function(element) {
+                    var el = angular.element(element);
+                    // ignore panels and the generated ui-panel-dismiss div.
+                    if (!el.data('$jqmPanelController') && el.data('$scope') && el.scope().$$transcluded) {
+                        content.push(element);
+                    }
+                });
+                return content;
             }
         }
     };
+    function JqmPanelContainerCtrl($scope, $element) {
+        var panels = {},
+            content;
+
+        this.addPanel = function (panel) {
+            panels[panel.scope.position] = panel;
+        };
+        this.setContent = function(_content) {
+            content = _content;
+        };
+        $scope.$watch('$scopeAs.pc.openPanelName', openPanelChanged);
+        if (!$sniffer.animations) {
+            $scope.$watch('$scopeAs.pc.openPanelName', transitionComplete);
+        } else {
+            $transitionComplete($element, transitionComplete);
+        }
+
+        function openPanelChanged() {
+            updatePanelContent();
+            angular.forEach(panels, function (panel) {
+                var opened = panel.scope.position === $scope.openPanelName;
+                if (opened) {
+                    panel.element.removeClass('ui-panel-closed');
+                    $timeout(function () {
+                        panel.element.addClass('ui-panel-open');
+                    }, 1, false);
+                } else {
+                    panel.element.removeClass('ui-panel-open ui-panel-opened');
+                }
+            });
+
+        }
+
+        //Doing transition stuff in jqmPanelContainer, as
+        //we need to listen for transition complete event on either the panel
+        //element or the panel content wrapper element. Some panel display
+        //types (overlay) only animate the panel, and some (reveal) only
+        //animate the content wrapper.
+        function transitionComplete() {
+            angular.forEach(panels, function (panel) {
+                var opened = panel.scope.position === $scope.openPanelName;
+                if (opened) {
+                    panel.element.addClass('ui-panel-opened');
+                } else {
+                    panel.element.addClass('ui-panel-closed');
+                }
+            });
+        }
+
+        function updatePanelContent() {
+            if (!content) {
+                return;
+            }
+            var openPanel = panels[$scope.openPanelName],
+                openPanelScope = openPanel && openPanel.scope;
+
+            content.addClass('ui-panel-content-wrap ui-panel-animate');
+
+            content.toggleClass('ui-panel-content-wrap-open', !!openPanelScope);
+
+            content.toggleClass('ui-panel-content-wrap-position-left',
+                !!(openPanelScope && openPanelScope.position === 'left'));
+
+            content.toggleClass('ui-panel-content-wrap-position-right',
+                !!(openPanelScope && openPanelScope.position === 'right'));
+            content.toggleClass('ui-panel-content-wrap-display-reveal',
+                !!(openPanelScope && openPanelScope.display === 'reveal'));
+            content.toggleClass('ui-panel-content-wrap-display-push',
+                !!(openPanelScope && openPanelScope.display === 'push'));
+            content.toggleClass('ui-panel-content-wrap-display-overlay',
+                !!(openPanelScope && openPanelScope.display === 'overlay'));
+        }
+    }
 }]);
 
 /**
@@ -1255,6 +1510,194 @@ jqmModule.directive('jqmScopeAs', [function () {
 
 /**
  * @ngdoc directive
+ * @name jqm.directive:jqmScrollable
+ * @restrict ECA
+ *
+ * @description
+ * # Overview
+ * `jqmScrollable` enables fake scrolling for the given element using angular-scrolly.
+ * @example
+    <example module="jqm">
+      <file name="index.html">
+         <div style="height:100px;overflow:hidden" jqm-scrollable>
+             <p>Hello</p>
+             <p>Hello</p>
+             <p>Hello</p>
+             <p>Hello</p>
+             <p>Hello</p>
+             <p>Hello</p>
+             <p>Hello</p>
+             <p>Hello</p>
+             <p>Hello</p>
+             <p>Hello</p>
+             <p>Hello</p>
+             <p>Hello</p>
+         </div>
+      </file>
+    </example>
+*/
+// Don't use scrolly-scroll directive here by purpose,
+// as it is swallowing all mousemove events, which prevents
+// the address bar to be shown using a scroll on the page header.
+jqmModule.directive('jqmScrollable', ['$scroller', function($scroller) {
+    return {
+        restrict: 'A',
+        link: function(scope, element) {
+            $scroller(element);
+        }
+    };
+}]);
+/**
+ * @ngdoc directive
+ * @name jqm.directive:jqmTextarea
+ * @restrict A
+ *
+ * @description
+ * Creates an jquery mobile textarea on the given elemen.
+ *
+ * @param {string} ngModel Assignable angular expression to data-bind to.
+ * @param {string=} disabled Whether this input is disabled.
+ *
+ * @example
+ <example module="jqm">
+ <file name="index.html">
+ Textarea with ng-model:
+ <div ng-model="model" jqm-textarea></div>
+
+ Value: {{model}}
+ <p/>
+ Textarea disabled:
+ <div data-disabled="disabled" jqm-textarea>Hello World</div>
+ <p/>
+ </file>
+ </example>
+ */
+jqmModule.directive('jqmTextarea', ['textareaDirective', function (textareaDirective) {
+    return {
+        templateUrl: 'templates/jqmTextarea.html',
+        replace: true,
+        restrict: 'A',
+        require: '?ngModel',
+        scope: {
+            disabled: '@'
+        },
+        link: function (scope, element, attr, ngModelCtrl) {
+            var textarea = angular.element(element[0]);
+
+            linkInput();
+
+            function linkInput() {
+                textarea.bind('focus', function () {
+                    element.addClass('ui-focus');
+                });
+                textarea.bind('blur', function () {
+                    element.removeClass('ui-focus');
+                });
+
+                angular.forEach(textareaDirective, function (directive) {
+                    directive.link(scope, textarea, attr, ngModelCtrl);
+                });
+                return textarea;
+            }
+        }
+    };
+}]);
+/**
+ * @ngdoc directive
+ * @name jqm.directive:jqmTextinput
+ * @restrict A
+ *
+ * @description
+ * Creates an jquery mobile input on the given element.
+ *
+ * @param {string} ngModel Assignable angular expression to data-bind to.
+ * @param {string=} type Defines the type attribute for the resulting input. Default is 'text'.
+ * @param {string=} disabled Whether this input is disabled.
+ * @param {string=} mini Whether this input is mini.
+ * @param {boolean=} clearBtn Whether this input should show a clear button to clear the input.
+ * @param {string=} clearBtnText Defines the tooltip text for the clear Button. Default is 'clear text'.
+ * @param {string=} placeholder Defines the placholder value for the input Element.
+ *
+ * @example
+ <example module="jqm">
+ <file name="index.html">
+ Text Input:
+ <div jqm-textinput ng-model="value"></div>
+ <p/>
+ Text Input: clear-btn="true"
+ <div jqm-textinput ng-model="value" clear-btn="true"></div>
+ <hl/>
+ Search Input:
+ <div jqm-textinput ng-model="search" type="search"></div>
+ </file>
+ </example>
+ */
+jqmModule.directive('jqmTextinput', ['inputDirective', function (inputDirective) {
+    return {
+        templateUrl: 'templates/jqmTextinput.html',
+        replace: true,
+        restrict: 'A',
+        require: '?ngModel',
+        scope: {
+            clearBtn: '@',
+            type: '@',
+            clearBtnText: '@',
+            disabled: '@',
+            mini: '@',
+            placeholder: '@'
+        },
+        link: function (scope, element, attr, ngModelCtrl) {
+            var input = angular.element(element[0].getElementsByTagName("input"));
+
+            scope.typeValue = type();
+            scope.clearBtnTextValue = scope.clearBtnText || 'clear text';
+
+            linkInput();
+            scope.getValue = getValue;
+            scope.clearValue = clearValue;
+            scope.isSearch = isSearch;
+
+            function type() {
+                var inputType = scope.type || 'text';
+                return (inputType === 'search') ? 'text' : inputType;
+            }
+
+            function getValue() {
+                return scope.type === 'color' || (ngModelCtrl && ngModelCtrl.$viewValue);
+            }
+
+            function clearValue(event) {
+                event.preventDefault();
+
+
+                input[0].value = '';
+                if (ngModelCtrl) {
+                    ngModelCtrl.$setViewValue('');
+                }
+            }
+
+            function isSearch() {
+                return scope.type === 'search';
+            }
+
+            function linkInput() {
+                input.bind('focus', function () {
+                    element.addClass('ui-focus');
+                });
+                input.bind('blur', function () {
+                    element.removeClass('ui-focus');
+                });
+
+                angular.forEach(inputDirective, function (directive) {
+                    directive.link(scope, input, attr, ngModelCtrl);
+                });
+                return input;
+            }
+        }
+    };
+}]);
+/**
+ * @ngdoc directive
  * @name jqm.directive:jqmTheme
  * @restrict A
  *
@@ -1291,69 +1734,268 @@ jqmModule.directive('jqmTheme', [function () {
     };
 }]);
 
-jqmModule.directive('jqmViewport', ['jqmCachingViewDirective', '$animator', '$history', 'jqmPanelContentWrapDirective', '$injector', '$route', function (ngViewDirectives, $animator, $history, jqmPanelContentWrapDirectives, $injector, $route) {
-    // Note: Can't use template + replace here,
-    // as this might be used on the <body>, which is not supported by angular.
-    // So we are calling the ngViewDirective#link functions directly...
-    return {
-        restrict: 'A',
-        compile: function (cElement) {
-            cElement.addClass("ui-mobile-viewport");
-            return link;
-        },
-        // for ng-view
-        terminal: true
-    };
-    function link(scope, iElement, iAttrs, ctrl) {
-        /*jshint -W040:true*/
-        var self = this,
-            args = arguments;
-        angular.forEach(ngViewDirectives, function (directive) {
-            directive.link.apply(self, args);
-        });
-        scope.$on('$viewContentLoaded', function (event, page) {
-            // Note: event.targetScope does not work when we put a jqm-theme on the page.
-            var pageScope = page.scope();
-            // if animations are disabled,
-            // add the "ui-page-active" css class manually.
-            // E.g. needed for the initial page.
-            if (!$animator.enabled()) {
-                iElement.children().addClass("ui-page-active");
-            }
-            iElement.addClass("ui-overlay-" + pageScope.$theme);
-        });
-        scope.$on('$routeChangeStart', function (e, newRoute) {
-            // Use $routeChangeStart and not $watch:
-            // Need to update the animate function before
-            // ngView evaluates it!
-            var transition,
-            transitionName,
-            reverse = $history.activeIndex < $history.previousIndex;
+/**
+ * @ngdoc directive
+ * @name jqm.directive:jqmView
+ * @restrict ECA
+ *
+ * @description
+ * # Overview
+ * `jqmView` extends `ngView` in the following way:
+ *
+ * - animations can also be specified on routes using the `animation` property (see below).
+ * - animations can also be specified in the template using the `view-animation` attribute on a root element.
+ * - when the user hits the back button, the last animation is executed with the `-reverse` suffix.
+ * - instead of using `$route` an expression can be specified as value of the directive. Whenever
+ *   the value of this expression changes `jqmView` updates accordingly.
+ * - content that has been declared inside of `ngView` stays there, so you can mix dynamically loaded content with
+ *   fixed content.
+ *
+ * @param {expression=} jqmView angular expression evaluating to a route.
+ *
+ *   * `{string}`: This will be interpreted as the url of a template.
+ *   * `{object}`: A route object with the same properties as `$route.current`:
+ *     - `templateUrl` - `{string=}` - the url for the template
+ *     - `controller` - `{string=|function()=}` - the controller
+ *     - `controllerAs` - `{string=}` - the name of the controller in the scope
+ *     - `locals` - `{object=}` - locals to be used when instantiating the controller
+ *     - `back` - `{boolean=}` - whether the animation should be executed in reverse
+ *     - `animation` - `{string=|function()=}` - the animation to use. If `animation` is a function it will
+ *        be called using the `$injector` with the extra locals `$routeParams` (`route.params`) and `$scope` (the scope of `jqm-view`).
+ *
+ * @scope
+ * @example
+ <example module="jqmView">
+ <file name="index.html">
+ Choose:
+ <a href="#/Book/Moby">Moby</a> |
+ <a href="#/Book/Moby/ch/1">Moby: Ch1</a> |
+ <a href="#/Book/Gatsby">Gatsby</a> |
+ <a href="#/Book/Gatsby/ch/4?key=value">Gatsby: Ch4</a> |
+ <a href="#/Book/Scarlet">Scarlet Letter</a><br/>
 
-            if (reverse) {
-                transition = $history.urlStack[$history.previousIndex].transition;
+ <div jqm-view style="height:300px"></div>
+ </file>
+
+ <file name="book.html">
+ <div jqm-page>
+ <div jqm-header><h1>Book {{book.params.bookId}}</h1></div>
+ The book contains ...
+ </div>
+ </file>
+
+ <file name="chapter.html">
+ <div jqm-page>
+ <div jqm-header><h1>Chapter {{chapter.params.chapterId}} of {{chapter.params.bookId}}</h1></div>
+ This chapter contains ...
+ </div>
+ </file>
+
+ <file name="script.js">
+ angular.module('jqmView', ['jqm'], function($routeProvider) {
+          $routeProvider.when('/Book/:bookId', {
+            templateUrl: 'book.html',
+            controller: BookCntl,
+            controllerAs: 'book',
+            animation: 'page-slide'
+          });
+          $routeProvider.when('/Book/:bookId/ch/:chapterId', {
+            templateUrl: 'chapter.html',
+            controller: ChapterCntl,
+            controllerAs: 'chapter',
+            animation: 'page-slide'
+          });
+        });
+
+ function BookCntl($routeParams) {
+          this.params = $routeParams;
+        }
+
+ function ChapterCntl($routeParams) {
+          this.params = $routeParams;
+        }
+ </file>
+ </example>
+ */
+jqmModule.directive('jqmView', ['$templateCache', '$route', '$anchorScroll', '$compile',
+    '$controller', '$animator', '$http', '$q', '$injector',
+    function ($templateCache, $route, $anchorScroll, $compile, $controller, $animator, $http, $q, $injector) {
+        return {
+            restrict: 'ECA',
+            controller: ['$scope', JqmViewCtrl],
+            require: 'jqmView',
+            compile: function (element, attr) {
+                element.children().attr('view-fixed', 'true');
+                return link;
+            }
+        };
+        function link(scope, element, attr, jqmViewCtrl) {
+            var lastScope,
+                lastContents,
+                lastAnimationName,
+                onloadExp = attr.onload || '',
+                animateAttr = {},
+                animate = $animator(scope, animateAttr),
+                jqmViewExpr = attr[jqmViewCtrl.watchAttrName],
+                changeCounter = 0;
+            if (!jqmViewExpr) {
+                watchRoute();
             } else {
-                transition = newRoute.transition;
+                watchRouteExp(jqmViewExpr);
             }
-            $history.urlStack[$history.activeIndex].transition = transition;
 
-            if (angular.isFunction(transition) || angular.isArray(transition)) {
-                transitionName = $injector.invoke(newRoute.transition, null, {
-                    $scope: scope,
-                    $routeParams: newRoute.params
+            function watchRoute() {
+                scope.$on('$routeChangeSuccess', update);
+                update();
+
+                function update() {
+                    routeChanged($route.current);
+                }
+            }
+
+
+            function watchRouteExp(routeExp) {
+                // only shallow watch (e.g. change of route instance)
+                scope.$watch(routeExp, routeChanged, false);
+            }
+
+            function routeChanged(route) {
+                // For this counter logic, see ngIncludeDirective!
+                var thisChangeId = ++changeCounter,
+                    $template;
+                if (!route || angular.isString(route)) {
+                    route = {
+                        templateUrl: route
+                    };
+                }
+                $template = route.locals && route.locals.$template;
+                var url = route.loadedTemplateUrl || route.templateUrl || $template;
+                if (url) {
+                    // Note: $route already loads the template. However, as it's also
+                    // using $templateCache and so does loadAndCompile we don't get extra $http requests.
+                    jqmViewCtrl.loadAndCompile(url, $template).then(function (templateInstance) {
+                        if (thisChangeId !== changeCounter) {
+                            return;
+                        }
+                        templateLoaded(route, templateInstance);
+                    }, function () {
+                        if (thisChangeId === changeCounter) {
+                            clearContent();
+                        }
+                        clearContent();
+                    });
+                } else {
+                    clearContent();
+                }
+            }
+
+            function clearContent() {
+                var contents = angular.element();
+                angular.forEach(element.contents(), function(element) {
+                    var el = angular.element(element);
+                    if (!el.attr('view-fixed')) {
+                        contents.push(element);
+                    }
                 });
-            } else {
-                transitionName = transition;
+
+                jqmViewCtrl.onClearContent(contents);
+                animate.leave(contents, element);
+                if (lastScope) {
+                    lastScope.$destroy();
+                    lastScope = null;
+                }
             }
 
-            iAttrs.$set('ngAnimate', "'jqmPage-" + (transitionName||'none') + (reverse?"-reverse":"")+"'");
-        });
+            function templateLoaded(route, templateInstance) {
+                var locals = route.locals || {},
+                    controller;
+                calcAnimation(route, templateInstance);
+                clearContent();
+                animate.enter(templateInstance.elements, element);
 
-        angular.forEach(jqmPanelContentWrapDirectives, function(delegate) {
-            delegate.link(scope, iElement, iAttrs);
-        });
-    }
-}]);
+                lastScope = locals.$scope = templateInstance.scope;
+                route.scope = lastScope;
+                lastContents = templateInstance.elements;
+
+                if (route.controller) {
+                    controller = $controller(route.controller, locals);
+                    if (route.controllerAs) {
+                        lastScope[route.controllerAs] = controller;
+                    }
+                    element.children().data('$ngControllerController', controller);
+                }
+                lastScope.$emit('$viewContentLoaded', templateInstance.elements);
+                lastScope.$eval(onloadExp);
+                // $anchorScroll might listen on event...
+                $anchorScroll();
+            }
+
+            function calcAnimation(route, templateInstance) {
+                var animation,
+                    reverse = route.back,
+                    routeAnimationName,
+                    animationName;
+                if (attr.ngAnimate) {
+                    animateAttr.ngAnimate = attr.ngAnimate;
+                    return;
+                }
+                animation = route.animation;
+                if (angular.isFunction(animation) || angular.isArray(animation)) {
+                    routeAnimationName = $injector.invoke(route.animation, null, {
+                        $scope: scope,
+                        $routeParams: route.params
+                    });
+                } else {
+                    routeAnimationName = animation;
+                }
+                if (!routeAnimationName) {
+                    angular.forEach(templateInstance.elements, function (element) {
+                        var el = angular.element(element);
+                        routeAnimationName = routeAnimationName || el.attr('view-animation') || el.attr('data-view-animation');
+                    });
+                }
+                if (reverse) {
+                    animationName = lastAnimationName;
+                    if (animationName) {
+                        animationName += "-reverse";
+                    }
+                } else {
+                    animationName = routeAnimationName;
+                }
+                lastAnimationName = routeAnimationName;
+                if (animationName) {
+                    animateAttr.ngAnimate = "'" + animationName + "'";
+                } else {
+                    animateAttr.ngAnimate = "''";
+                }
+            }
+        }
+
+        function JqmViewCtrl($scope) {
+            this.watchAttrName = 'jqmView';
+            this.loadAndCompile = loadAndCompile;
+            this.onClearContent = angular.noop;
+
+            function loadAndCompile(templateUrl, template) {
+                if (template) {
+                    return $q.when(compile(template));
+                } else {
+                    return $http.get(templateUrl, {cache: $templateCache}).then(function (response) {
+                        return compile(response.data);
+                    });
+                }
+            }
+
+            function compile(template) {
+                var link = $compile(angular.element('<div></div>').html(template).contents());
+                var scope = $scope.$new();
+                return {
+                    scope: scope,
+                    elements: link(scope)
+                };
+            }
+        }
+    }]);
 
 // set the initial `ui-btn-up-<theme>` class for buttons
 jqmModule.directive('ngClick', [function () {
@@ -1415,7 +2057,7 @@ jqmModule.run(['$anchorScroll', '$rootScope', function($anchorScroll, $rootScope
     });
 }]);
 jqmModule.factory('$animationComplete', ['$sniffer', function ($sniffer) {
-    return function (el, callback) {
+    return function (el, callback, once) {
         var eventNames = 'animationend';
         if (!$sniffer.animations) {
             throw new Error("Browser does not support css animations.");
@@ -1423,13 +2065,31 @@ jqmModule.factory('$animationComplete', ['$sniffer', function ($sniffer) {
         if ($sniffer.vendorPrefix) {
             eventNames += " " + $sniffer.vendorPrefix.toLowerCase() + "AnimationEnd";
         }
-        el.bind(eventNames, callback);
+        var _callback = callback;
+        if (once) {
+            callback = function() {
+                unbind();
+                _callback();
+            };
+        }
+        //We have to split because unbind doesn't support multiple event names in one string
+        //This will be fixed in 1.2, PR opened https://github.com/angular/angular.js/pull/3256
+        angular.forEach(eventNames.split(' '), function(eventName) {
+            el.bind(eventName, callback);
+        });
+
+        return unbind;
+
+        function unbind() {
+            angular.forEach(eventNames.split(' '), function(eventName) {
+                el.unbind(eventName, callback);
+            });
+        }
     };
 }]);
 
 jqmModule.config(['$provide', function ($provide) {
     $provide.decorator('$browser', ['$delegate', browserHashReplaceDecorator]);
-    $provide.decorator('$browser', ['$delegate', '$history', browserHistoryDecorator]);
     return;
 
     // ---------------
@@ -1445,25 +2105,6 @@ jqmModule.config(['$provide', function ($provide) {
                 res = res.replace(/ /g, '%20');
             }
             return res;
-        };
-        return $browser;
-    }
-
-    // Integrates $browser with $history.
-    function browserHistoryDecorator($browser, $history) {
-        var _url = $browser.url;
-        $browser.onUrlChange($history.onUrlChangeBrowser);
-
-        $browser.url = function (url, replace) {
-            if (url) {
-                // setter
-                var res = _url.call(this, url, replace);
-                $history.onUrlChangeProgrammatically(url, replace);
-                return res;
-            } else {
-                // getter
-                return _url.apply(this, arguments);
-            }
         };
         return $browser;
     }
@@ -1558,17 +2199,50 @@ jqmModule.factory('$hideAddressBar', ['$window', '$rootElement', '$orientation',
         $rootElement.css('height', height + 'px');
     }
 }]);
-jqmModule.factory('$history', function $historyFactory() {
-    var $history;
-    return $history = {
+jqmModule.config(['$provide', function($provide) {
+    var lastLocationChangeByProgram = false;
+    $provide.decorator('$location', ['$delegate', '$browser', '$history', '$rootScope', function($location, $browser, $history, $rootScope) {
+        instrumentBrowser();
+
+        $rootScope.$on('$locationChangeSuccess', function () {
+            if (!lastLocationChangeByProgram) {
+                $history.onUrlChangeBrowser($location.url());
+            }
+        });
+
+        $history.onUrlChangeProgrammatically($location.url() || '/', false);
+
+        return $location;
+
+        function instrumentBrowser() {
+            var _url = $browser.url;
+            $browser.url = function (url, replace) {
+                if (url) {
+                    // setter
+                    $history.onUrlChangeProgrammatically($location.url(), replace);
+                    lastLocationChangeByProgram = true;
+                    $rootScope.$evalAsync(function () {
+                        lastLocationChangeByProgram = false;
+                    });
+                }
+                return _url.apply(this, arguments);
+            };
+        }
+    }]);
+}]);
+
+jqmModule.factory('$history', ['$window', '$timeout', function $historyFactory($window, $timeout) {
+    var $history = {
         go: go,
         urlStack: [],
         indexOf: indexOf,
         activeIndex: -1,
         previousIndex: -1,
-        onUrlChangeProgrammatically: onUrlChangeProgrammatically,
-        onUrlChangeBrowser: onUrlChangeBrowser
+        onUrlChangeBrowser: onUrlChangeBrowser,
+        onUrlChangeProgrammatically: onUrlChangeProgrammatically
     };
+
+    return $history;
 
     function go(relativeIndex) {
         // Always execute history.go asynchronously.
@@ -1578,9 +2252,9 @@ jqmModule.factory('$history', function $historyFactory() {
         // Note that we need at least 20ms to ensure that
         // the hashchange/popstate event for the current page
         // as been delivered (in IE this can take some time...).
-        window.setTimeout(function () {
-            window.history.go(relativeIndex);
-        }, 20);
+        $timeout(function () {
+            $window.history.go(relativeIndex);
+        }, 20, false);
     }
 
     function indexOf(url) {
@@ -1592,14 +2266,6 @@ jqmModule.factory('$history', function $historyFactory() {
             }
         }
         return -1;
-    }
-
-    function findInPast(url) {
-        var index = $history.activeIndex - 1;
-        while (index >= 0 && $history.urlStack[index].url !== url) {
-            index--;
-        }
-        return index;
     }
 
     function onUrlChangeBrowser(url) {
@@ -1623,35 +2289,370 @@ jqmModule.factory('$history', function $historyFactory() {
             $history.urlStack.push({url: url});
         }
     }
-});
+}]);
+
+/**
+ * @ngdoc object
+ * @name jqm.jqmConfigProvider
+ *
+ * @description Used to configure the default theme.
+ */
 
 jqmModule.provider('jqmConfig', function() {
-    var _defaultTheme = 'c';
+    /**
+     * @ngdoc method
+     * @name jqm.jqmConfigProvider#primaryTheme
+     * @methodOf jqm.jqmConfigProvider
+     *
+     * @description Sets/gets the default primary theme (used if jqm-theme is
+     * not set on the element). Default: 'c'
+     *
+     * @param {string=} newTheme The new primary theme to set.
+     * @returns {string} The current primary theme.
+     */
+    /**
+     * @ngdoc method
+     * @name jqm.jqmConfigProvider#secondaryTheme
+     * @methodOf jqm.jqmConfigProvider
+     * 
+     * @description Sets/gets the secondary theme (used on footers, headers, etc 
+     * if not theme is set on the element). Default: 'a'
+     *
+     * @param {string=} newTheme The new secondary theme to set.
+     * @returns {string} The current secondary theme.
+     */
+
+    var _primaryTheme = 'c';
+    var _secondaryTheme = 'a';
     return {
-        defaultTheme: defaultTheme,
+        primaryTheme: primaryTheme,
+        secondaryTheme: secondaryTheme,
         $get: serviceFactory
     };
 
-    function defaultTheme(value) {
-        if (value) {
-            _defaultTheme = value;
-        }
-        return _defaultTheme;
+    function primaryTheme(value) {
+        if (value) { _primaryTheme = value; }
+        return _primaryTheme;
+    }
+    function secondaryTheme(value) {
+        if (value) { _secondaryTheme = value; }
+        return _secondaryTheme;
     }
 
+    /**
+     * @ngdoc object
+     * @name jqm.jqmConfig
+     * @description
+     * A service used to tell the default primary and secondary theme. 
+     */
+    /**
+     * @ngdoc property
+     * @name jqm.jqmConfig#primaryTheme
+     * @propertyOf jqm.jqmConfig
+     *
+     * @description {string} The current primary theme.  See {@link jqm.jqmConfigProvider#primaryTheme}.
+     */
+    /**
+     * @ngdoc property
+     * @name jqm.jqmConfig#secondaryTheme
+     * @propertyOf jqm.jqmConfig
+     *
+     * @description {string} The current secondary theme.  See {@link jqm.jqmConfigProvider#secondaryTheme}.
+     */
     function serviceFactory() {
         return {
-            defaultTheme: _defaultTheme
+            primaryTheme: _primaryTheme,
+            secondaryTheme: _secondaryTheme
         };
     }
 
 });
 
+jqmModule.provider('jqmViewCache', function () {
+    return {
+        $get: ['$cacheFactory', '$compile', '$http', '$templateCache', '$q', factory]
+    };
+
+    function factory($cacheFactory, $compile, $http, $templateCache, $q) {
+        var jqmViewCache = $cacheFactory('jqmCachingView');
+
+        return {
+            cache: jqmViewCache,
+            load: load
+        };
+
+        function load(scope, url) {
+            var cacheKey = scope.$id+'@'+url,
+                cacheEntryPromise = jqmViewCache.get(cacheKey);
+            if (cacheEntryPromise) {
+                return cacheEntryPromise;
+            }
+            cacheEntryPromise = $http.get(url, {cache: $templateCache}).then(function (response) {
+                var compileElements = angular.element('<div></div>').html(response.data).contents();
+                return createCacheEntry(scope, compileElements);
+            });
+            jqmViewCache.put(cacheKey, cacheEntryPromise);
+            return cacheEntryPromise;
+        }
+
+        function createCacheEntry(scope, compileElements) {
+            var currentIndex = 0,
+                templateInstances = [],
+                i,
+                templateInstanceCount = 1,
+                link;
+            angular.forEach(compileElements, function (element) {
+                var el;
+                if (element.nodeType === window.Node.ELEMENT_NODE) {
+                    el = angular.element(element);
+                    if (angular.isDefined(el.attr('allow-same-view-animation')) ||
+                        angular.isDefined(el.attr('data-allow-same-view-animation'))) {
+                        templateInstanceCount = 2;
+                    }
+                }
+            });
+            link = $compile(compileElements);
+            for (i = 0; i < templateInstanceCount; i++) {
+                templateInstances.push(createTemplateInstance(link, scope, true));
+            }
+            return {
+                get: get,
+                next: next
+            };
+
+            function get(index) {
+                if (!angular.isDefined(index)) {
+                    index = currentIndex;
+                }
+                return templateInstances[index];
+            }
+
+            function next() {
+                currentIndex++;
+                if (currentIndex >= templateInstances.length) {
+                    currentIndex = 0;
+                }
+                return get(currentIndex);
+            }
+        }
+
+        function createTemplateInstance(link, scope, clone) {
+            var ctrlScope = scope.$new(),
+                directiveScope = ctrlScope.$new(),
+                elements,
+                cloneAttachFn;
+            ctrlScope.$disconnect();
+            ctrlScope.$destroy = scopeClearAndDisconnect;
+            if (clone) {
+                cloneAttachFn = angular.noop;
+            }
+            elements = link(directiveScope, cloneAttachFn);
+            return {
+                scope: ctrlScope,
+                elements: elements
+            };
+        }
+    }
+
+    function scopeClearAndDisconnect() {
+        /*jshint -W040:true*/
+        var prop;
+        // clear all watchers, listeners and all non angular properties,
+        // so we have a fresh scope!
+        this.$$watchers = [];
+        this.$$listeners = [];
+        for (prop in this) {
+            if (this.hasOwnProperty(prop) && prop.charAt(0) !== '$') {
+                delete this[prop];
+            }
+        }
+        this.$disconnect();
+    }
+
+
+
+
+});
 /**
- * The cache that is used in `jqmCachingView`.
+ * @ngdoc function
+ * @name jqm.$loadDialog
+ * @requires $rootElement
+ * @requires $rootScope
+ *
+ * @description
+ * Shows a wait dialog to indicate some long running work.
+ * @example
+<example module="jqm">
+  <file name="index.html">
+    <div ng-controller="DemoCtrl">
+      <button ng-click="$loadDialog.hide()">Hide</button>
+      <hr />
+      <div jqm-textinput placeholder="Dialog Text" ng-model="dialogText"></div>
+      <button ng-click="$loadDialog.show(dialogText)">Show{{dialogText && ' with text' || ''}}</button>
+      <hr />
+      <button ng-click="showForPromise()">waitFor promise</button>
+    </div>
+  </file>
+  <file name="script.js">
+    function DemoCtrl($scope, $loadDialog, $timeout, $q) {
+      $scope.$loadDialog = $loadDialog;     
+
+      $scope.showForPromise = function() {
+        var deferred = $q.defer();
+        $timeout(deferred.resolve, 1000);
+
+        $loadDialog.waitFor(deferred.promise, 'Showing for 1000ms promise...');
+      };
+    }
+  </file>
+</example>
  */
-jqmModule.factory("$jqmViewCache", ['$cacheFactory', function($cacheFactory) {
-    return $cacheFactory('views');
+jqmModule.factory('$loadDialog', ['$rootElement', '$rootScope', function ($rootElement, $rootScope) {
+
+    var rootElement = $rootElement.clone();
+
+    var showCalls = [];
+    var loadingClass = 'ui-loading';
+
+    var defaultTemplate = angular.element("<div class='ui-loader ui-corner-all ui-body-d'>" +
+        "   <span class='ui-icon ui-icon-loading'></span>" +
+        "   <h1></h1>" +
+        "</div>");
+
+    $rootElement.append(defaultTemplate);
+    defaultTemplate.bind("click", onClick);
+
+    function onClick(event) {
+        var lastCall = showCalls[showCalls.length - 1];
+        if (lastCall.callback) {
+            $rootScope.$apply(function () {
+                lastCall.callback.apply(this, arguments);
+            });
+        }
+        // This is required to prevent a second
+        // click event, see
+        // https://github.com/jquery/jquery-mobile/issues/1787
+        event.preventDefault();
+    }
+
+
+    function updateUI() {
+        if (showCalls.length > 0) {
+            var lastCall = showCalls[showCalls.length - 1];
+            var message = lastCall.msg;
+
+            defaultTemplate.removeClass('ui-loader-verbose ui-loader-default');
+
+            if (message) {
+                defaultTemplate.addClass('ui-loader-verbose');
+                defaultTemplate.find('h1').text(message);
+            } else {
+                defaultTemplate.addClass('ui-loader-default');
+            }
+
+            $rootElement.addClass(loadingClass);
+        } else {
+            $rootElement.removeClass(loadingClass);
+        }
+    }
+
+    /**
+     * @ngdoc method
+     * @name jqm.$loadDialog#show
+     * @methodOf jqm.$loadDialog
+     *
+     * @description
+     * Opens the wait dialog and shows the given message (if existing).
+     * If the user clicks on the wait dialog the given callback is called.
+     * This can be called even if the dialog is currently showing. It will
+     * then change the message and revert back to the last message when
+     * the hide function is called.
+     *
+     * @param {string=} message The message to be shown when the wait dialog is displayed.
+     * @param {function=} callback The Callback that is executed when the wait dialog is clicked.
+     *
+     */
+    function show() {
+        var msg, tapCallback;
+        if (typeof arguments[0] === 'string') {
+            msg = arguments[0];
+        }
+        if (typeof arguments[0] === 'function') {
+            tapCallback = arguments[0];
+        }
+        if (typeof arguments[1] === 'function') {
+            tapCallback = arguments[1];
+        }
+
+        showCalls.push({msg: msg, callback: tapCallback});
+        updateUI();
+    }
+
+    /**
+     * @ngdoc method
+     * @name jqm.$loadDialog#hide
+     * @methodOf jqm.$loadDialog
+     *
+     * @description
+     * Restores the dialog state before the show function was called.
+     *
+     */
+    function hide() {
+        showCalls.pop();
+        updateUI();
+    }
+
+    function always(promise, callback) {
+        promise.then(callback, callback);
+    }
+
+    /**
+     * @ngdoc method
+     * @name jqm.$loadDialog#waitFor
+     * @methodOf jqm.$loadDialog
+     *
+     * @description
+     * Shows the dialog as long as the given promise runs. Shows the given message
+     * if defined.
+     *
+     * @param {Promise} promise The Promise.
+     * @param {string=} message The message to be show.
+     * */
+    function waitFor(promise, msg) {
+        show(msg);
+        always(promise, function () {
+            hide();
+        });
+    }
+
+    /**
+     * @ngdoc method
+     * @name jqm.$loadDialog#waitForWithCancel
+     * @methodOf jqm.$loadDialog
+     *
+     * @description
+     * Same as jqm.$loadDialog#waitFor, but rejects the promise with the given
+     * cancelData when the user clicks on the wait dialog.
+     *
+     * @param {Deferred} The deferred object to cancel the promise.
+     * @param {*} cancelData To reject the promise with.
+     * @param {string=} message The message to be show.
+     */
+    function waitForWithCancel(deferred, cancelData, msg) {
+        show(msg, function () {
+            deferred.reject(cancelData);
+        });
+        always(deferred.promise, function () {
+            hide();
+        });
+    }
+
+    return {
+        show: show,
+        hide: hide,
+        waitFor: waitFor,
+        waitForWithCancel: waitForWithCancel
+    };
 }]);
 
 /**
@@ -1779,6 +2780,29 @@ jqmModule.run(['$window', function($window) {
     angular.element($window.document.documentElement).addClass("ui-mobile");
 }]);
 
+jqmModule.config(['$provide', function($provide) {
+    $provide.decorator('$route', ['$delegate', '$rootScope', '$history', function($route, $rootScope, $history) {
+        $rootScope.$on('$routeChangeStart', function(event, newRoute) {
+            if (newRoute) {
+                newRoute.back = $history.activeIndex < $history.previousIndex;
+            }
+        });
+        return $route;
+    }]);
+}]);
+/**
+ * In the docs, an embedded angular app is used. However, due to a bug,
+ * the docs don't disconnect the embedded $rootScope from the real $rootScope.
+ * By this, our embedded app will never get freed and it's watchers will still fire.
+ */
+jqmModule.run(['$rootElement', '$rootScope', function clearRootScopeOnRootElementDestroy($rootElement, $rootScope) {
+    $rootElement.bind('$destroy', function() {
+        $rootScope.$destroy();
+        $rootScope.$$watchers = [];
+        $rootScope.$$listeners = [];
+    });
+}]);
+
 jqmModule.config(['$provide', function ($provide) {
     $provide.decorator('$rootScope', ['$delegate', scopeReconnectDecorator]);
     $provide.decorator('$rootScope', ['$delegate', 'jqmConfig', inheritThemeDecorator]);
@@ -1829,7 +2853,7 @@ jqmModule.config(['$provide', function ($provide) {
     }
 
     function inheritThemeDecorator($rootScope, jqmConfig) {
-        instrumentScope($rootScope, jqmConfig.defaultTheme);
+        instrumentScope($rootScope, jqmConfig.primaryTheme);
         return $rootScope;
 
         function instrumentScope(scope, theme) {
@@ -1943,49 +2967,48 @@ jqmModule.config(['$provide', function ($provide) {
     }]);
 }]);
 
-jqmModule.config(['$provide', function ($provide) {
-    /**
-     * Adds a function called `keys` to the $templateCache so that
-     * it is possible to inspect the stored templates.
-     * Note that the keys might be out of date when templates have been removed.
-     */
-    $provide.decorator("$templateCache", ['$delegate', function ($templateCache) {
-        var keys = [],
-            _put = $templateCache.put;
-        $templateCache.put = function (key, value) {
-            keys.push(key);
-            return _put.call(this, key, value);
-        };
-        $templateCache.keys = function () {
-            return keys;
-        };
-        return $templateCache;
-
-    }]);
-}]);
-
 jqmModule.factory('$transitionComplete', ['$sniffer', function ($sniffer) {
     return function (el, callback, once) {
         var eventNames = 'transitionend';
-        if (!$sniffer.animations) {
+        if (!$sniffer.transitions) {
             throw new Error("Browser does not support css transitions.");
         }
         if ($sniffer.vendorPrefix) {
             eventNames += " " + $sniffer.vendorPrefix.toLowerCase() + "TransitionEnd";
         }
+        var _callback = callback;
+        if (once) {
+            callback = function() {
+                unbind();
+                _callback();
+            };
+        }
         //We have to split because unbind doesn't support multiple event names in one string
         //This will be fixed in 1.2, PR opened https://github.com/angular/angular.js/pull/3256
         angular.forEach(eventNames.split(' '), function(eventName) {
-            function onceDone() {
-                callback();
-                el.unbind(eventName, onceDone);
-            }
-            el.bind(eventName, once ? onceDone : callback);
+            el.bind(eventName, callback);
         });
+
+        return unbind;
+
+        function unbind() {
+            angular.forEach(eventNames.split(' '), function(eventName) {
+                el.unbind(eventName, callback);
+            });
+        }
     };
 }]);
 
-angular.module('jqm-templates', ['templates/jqmCheckbox.html', 'templates/jqmControlgroup.html', 'templates/jqmFlip.html', 'templates/jqmLiEntry.html', 'templates/jqmLiLink.html', 'templates/jqmListview.html', 'templates/jqmPanel.html']);
+angular.module('jqm-templates', ['templates/jqmButton.html', 'templates/jqmCheckbox.html', 'templates/jqmControlgroup.html', 'templates/jqmFlip.html', 'templates/jqmLiEntry.html', 'templates/jqmLiLink.html', 'templates/jqmListview.html', 'templates/jqmPanel.html', 'templates/jqmPanelContainer.html', 'templates/jqmTextarea.html', 'templates/jqmTextinput.html']);
+
+angular.module("templates/jqmButton.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("templates/jqmButton.html",
+    "<span class=\"ui-btn-inner\">\n" +
+    "  <span class=\"ui-btn-text\" ng-transclude></span>\n" +
+    "  <span ng-if=\"$scopeAs.jqmBtn.icon\" class=\"ui-icon {{$parent.icon}}\">&nbsp;</span>\n" +
+    "</span>\n" +
+    "");
+}]);
 
 angular.module("templates/jqmCheckbox.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("templates/jqmCheckbox.html",
@@ -2030,12 +3053,12 @@ angular.module("templates/jqmFlip.html", []).run(["$templateCache", function($te
     "             jqm-class=\"{'ui-disabled': $scopeAs.jqmFlip.disabled,\n" +
     "                        'ui-mini': $scopeAs.jqmFlip.isMini()}\"\n" +
     "             ng-click=\"$scopeAs.jqmFlip.toggle()\">\n" +
-    "                <span class=\"ui-slider-label ui-slider-label-a ui-btn-active ui-btn-corner-all\" style=\"width: {{$scopeAs.jqmFlip.onStyle}}%;\">{{$scopeAs.jqmFlip.onLabel}}</span>\n" +
-    "                <span class=\"ui-slider-label ui-slider-label-b ui-btn-down-{{$scopeAs.jqmFlip.theme}} ui-btn-corner-all\" style=\"width: {{$scopeAs.jqmFlip.offStyle}}%;\">{{$scopeAs.jqmFlip.offLabel}}</span>\n" +
+    "             <span class=\"ui-slider-label ui-slider-label-a ui-btn-active ui-btn-corner-all\" ng-style=\"{width: $scopeAs.jqmFlip.onStyle + '%'}\">{{$scopeAs.jqmFlip.onLabel}}</span>\n" +
+    "             <span class=\"ui-slider-label ui-slider-label-b ui-btn-down-{{$scopeAs.jqmFlip.theme}} ui-btn-corner-all\" ng-style=\"{width: $scopeAs.jqmFlip.offStyle + '%'}\">{{$scopeAs.jqmFlip.offLabel}}</span>\n" +
     "                <div class=\"ui-slider-inneroffset\">\n" +
     "                  <a class=\"ui-slider-handle ui-slider-handle-snapping ui-btn ui-btn-corner-all ui-btn-up-{{$scopeAs.jqmFlip.theme}} ui-shadow\"\n" +
     "                     title=\"{{$scopeAs.jqmFlip.toggleLabel}}\"\n" +
-    "                     style=\"left: {{$scopeAs.jqmFlip.onStyle}}%;\">\n" +
+    "                     ng-style=\"{left: $scopeAs.jqmFlip.onStyle + '%'}\">\n" +
     "                    <span class=\"ui-btn-inner\"><span class=\"ui-btn-text\"></span></span>\n" +
     "                  </a>\n" +
     "                </div>\n" +
@@ -2092,14 +3115,57 @@ angular.module("templates/jqmPanel.html", []).run(["$templateCache", function($t
   $templateCache.put("templates/jqmPanel.html",
     "<div class=\"ui-panel ui-panel-closed\"\n" +
     "  ng-class=\"'ui-panel-position-'+position+' ui-panel-display-'+display+' ui-body-'+$theme+' ui-panel-animate'\">\n" +
-    "  <div class=\"ui-panel-inner\" jqm-scrollable ng-transclude></div>\n" +
+    "  <div class=\"ui-panel-inner\" ng-transclude></div>\n" +
     "</div>\n" +
     "");
 }]);
 
-angular.element(window.document).find('head').append('<style type="text/css">* {\n    -webkit-backface-visibility-hidden;\n}\nhtml, body {\n    -webkit-user-select: none;\n}\n\n/* browser resets */\n.ui-mobile, .ui-mobile html, .ui-mobile body {\n    height: 100%;\n    margin: 0\n}\n\n.ui-footer {\n    position: absolute;\n    bottom: 0;\n    width: 100%;\n    z-index: 1\n}\n\n.ui-header {\n    position: absolute;\n    top: 0;\n    width: 100%;\n    z-index: 1\n}\n\n.ui-mobile .ui-page {\n    height: 100%;\n    min-height: 0;\n    overflow: hidden;\n}\n.ui-content {\n    position: relative;\n    margin: 0;\n    padding: 0;\n}\n.ui-content.jqm-content-with-header {\n    margin-top: 42px\n}\n\n.ui-content.jqm-content-with-footer {\n    margin-bottom: 43px\n}\n.jqm-standalone-page {\n    display: block;\n    position: relative;\n}\n.ui-panel {\n  position: absolute;\n}\n\n.ui-panel-closed {\n  display: none;\n}\n\n.ui-panel.ui-panel-opened {\n  z-index: 1001;\n}\n.ui-panel-dismiss {\n  z-index: 1000; /* lower than ui-panel */\n}\n\n\n.ui-mobile-viewport {\n    /* needed to allow multiple viewports */\n    position: relative;\n    height:100%\n}\n</style>');})(window, angular);
+angular.module("templates/jqmPanelContainer.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("templates/jqmPanelContainer.html",
+    "<div jqm-scope-as=\"pc\" ng-transclude class=\"jqm-panel-container\">\n" +
+    "    <div class=\"ui-panel-dismiss\"\n" +
+    "        ng-click=\"$scopeAs.pc.openPanelName = null\" ng-class=\"{\'ui-panel-dismiss-open\' : $scopeAs.pc.openPanelName}\"\n" +
+    "    ></div>\n" +
+    "</div>");
+}]);
+
+angular.module("templates/jqmTextarea.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("templates/jqmTextarea.html",
+    "<textarea\n" +
+    "        jqm-scope-as=\"jqmTextarea\"\n" +
+    "        ng-class=\"{\'ui-disabled mobile-textinput-disabled ui-state-disabled\' : $scopeAs.jqmTextarea.disabled}\"\n" +
+    "        class=\"ui-input-text ui-corner-all ui-shadow-inset ui-body-{{$scopeAs.jqmTextarea.$theme}}\">\n" +
+    "</textarea>");
+}]);
+
+angular.module("templates/jqmTextinput.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("templates/jqmTextinput.html",
+    "<div jqm-scope-as=\"jqmTextinput\"\n" +
+    "     ng-class=\"{\n" +
+    "        \'ui-input-has-clear\': ($scopeAs.jqmTextinput.clearBtn && !$scopeAs.jqmTextinput.isSearch()),\n" +
+    "        \'ui-disabled\': $scopeAs.jqmTextinput.disabled,\n" +
+    "        \'ui-mini\': $scopeAs.jqmTextinput.mini,\n" +
+    "        \'ui-input-search ui-btn-corner-all ui-icon-searchfield\': $scopeAs.jqmTextinput.type === 'search',\n" +
+    "        \'ui-input-text ui-corner-all\': !$scopeAs.jqmTextinput.isSearch()}\"\n" +
+    "     class=\"ui-shadow-inset ui-btn-shadow ui-body-{{$scopeAs.jqmTextinput.$theme}}\">\n" +
+    "    <input type=\"{{$scopeAs.jqmTextinput.typeValue}}\" class=\"ui-input-text ui-body-{{$scopeAs.jqmTextinput.$theme}}\"\n" +
+    "           ng-class=\"{\'mobile-textinput-disabled ui-state-disabled\': $scopeAs.jqmTextinput.disabled}\" placeholder=\"{{$scopeAs.jqmTextinput.placeholder}}\">\n" +
+    "    <a ng-if=\"$scopeAs.jqmTextinput.clearBtn || $scopeAs.jqmTextinput.type === 'search'\" href=\"#\" ng-class=\"{\'ui-input-clear-hidden\': !getValue()}\"\n" +
+    "       ng-click=\"clearValue($event)\"\n" +
+    "       class=\"ui-input-clear ui-btn ui-shadow ui-btn-corner-all ui-fullsize ui-btn-icon-notext\"\n" +
+    "       title=\"{{clearBtnTextValue}}\">\n" +
+    "   <span class=\"ui-btn-inner\">\n" +
+    "                   <span class=\"ui-btn-text\" ng-bind=\"clearBtnTextValue\"></span>\n" +
+    "                   <span class=\"ui-icon ui-icon-delete ui-icon-shadow\">&nbsp;</span>\n" +
+    "               </span>\n" +
+    "    </a>\n" +
+    "\n" +
+    "</div>");
+}]);
+
+angular.element(window.document).find('head').append('<style type="text/css">* {\n    -webkit-backface-visibility-hidden;\n}\nhtml, body {\n    -webkit-user-select: none;\n}\n\n/* browser resets */\n.ui-mobile, .ui-mobile html, .ui-mobile body {\n    height: 100%;\n    margin: 0\n}\n\n.ui-footer {\n    position: absolute;\n    bottom: 0;\n    width: 100%;\n    z-index: 1\n}\n\n.ui-header {\n    position: absolute;\n    top: 0;\n    width: 100%;\n    z-index: 1\n}\n\n.ui-mobile .ui-page {\n    height: 100%;\n    min-height: 0;\n    overflow: hidden;\n}\n.ui-content {\n    position: relative;\n    margin: 0;\n    padding: 0;\n}\n.ui-content.jqm-content-with-header {\n    margin-top: 42px\n}\n\n.ui-content.jqm-content-with-footer {\n    margin-bottom: 43px\n}\n.jqm-standalone-page {\n    display: block;\n    position: relative;\n}\n.ui-panel {\n  position: absolute;\n}\n\n.ui-panel-closed {\n  display: none;\n}\n\n.ui-panel.ui-panel-opened {\n  z-index: 1001;\n}\n.ui-panel-dismiss {\n  z-index: 1000; /* lower than ui-panel */\n}\n\n.ui-panel-content-wrap {\n    height: 100%\n}\n\n.jqm-panel-container {\n    position: relative;\n    width: 100%;\n    height: 100%;\n}\n\n\n.ui-mobile-viewport {\n    /* needed to allow multiple viewports */\n    position: relative;\n    height:100%\n}\n</style>');})(window, angular);
 /*
- * angular-scrolly - v0.0.1 - 2013-05-29
+ * angular-scrolly - v0.0.2 - 2013-07-30
  * http://github.com/ajoslin/angular-scrolly
  * Created by Andy Joslin; Licensed under Public Domain
  */
@@ -2121,6 +3187,49 @@ angular.module('ajoslin.scrolly', [
         var scroller = new $scroller(elm);
       }
     };
+  }
+]);angular.module('ajoslin.scrolly.desktop', []).factory('$desktopScroller', [
+  '$document',
+  function ($document) {
+    return function $desktopScroller(elm, scroller) {
+      elm.bind('$destroy', function () {
+        $document.unbind('mousewheel', onMousewheel);
+        $document.unbind('keydown', onKey);
+      });
+      $document.bind('mousewheel', onMousewheel);
+      $document.bind('keydown', onKey);
+      function onMousewheel(e) {
+        var delta = e.wheelDeltaY / 2;
+        scroller.calculateHeight();
+        var newPos = scroller.transformer.pos + delta;
+        scroller.transformer.setTo(clamp(-scroller.scrollHeight, newPos, 0));
+        e.preventDefault();
+      }
+      var KEYS = {
+          38: 150,
+          40: -150,
+          32: -600
+        };
+      function onKey(e) {
+        var delta = KEYS[e.keyCode || e.which];
+        if (delta) {
+          e.preventDefault();
+          if (scroller.transformer.changing)
+            return;
+          scroller.calculateHeight();
+          var newPos = scroller.transformer.pos + delta;
+          newPos = clamp(-scroller.scrollHeight, newPos, 0);
+          if (newPos !== scroller.transformer.pos) {
+            var newDelta = newPos - scroller.transformer.pos;
+            var time = Math.abs(delta / 1.5) * (newDelta / delta);
+            scroller.transformer.easeTo(newPos, time);
+          }
+        }
+      }
+    };
+    function clamp(a, b, c) {
+      return Math.min(Math.max(a, b), c);
+    }
   }
 ]);angular.module('ajoslin.scrolly.dragger', []).provider('$dragger', function () {
   var _shouldBlurOnDrag = true;
@@ -2151,13 +3260,6 @@ angular.module('ajoslin.scrolly', [
     '$window',
     '$document',
     function ($window, $document) {
-      var hasTouch = 'ontouchstart' in $window;
-      var events = {
-          start: hasTouch ? 'touchstart' : 'mousedown',
-          move: hasTouch ? 'touchmove' : 'mousemove',
-          end: hasTouch ? 'touchend' : 'mouseup',
-          cancel: hasTouch ? 'touchcancel' : ''
-        };
       function $dragger(elm) {
         var self = {};
         var raw = elm[0];
@@ -2177,24 +3279,9 @@ angular.module('ajoslin.scrolly', [
             cb(eventType, arg);
           });
         }
-        elm.bind(events.start, dragStart);
-        elm.bind(events.move, dragMove);
-        elm.bind(events.end, dragEnd);
-        events.cancel && elm.bind(events.cancel, dragEnd);
-        if (!hasTouch) {
-          elm.bind('mouseout', function mouseout(e) {
-            var t = e.relatedTarget;
-            if (!t) {
-              dragEnd(e);
-            } else {
-              while (t = t.parentNode) {
-                if (t === elm)
-                  return;
-              }
-              dragEnd(e);
-            }
-          });
-        }
+        elm.bind('touchstart', dragStart);
+        elm.bind('touchmove', dragMove);
+        elm.bind('touchend touchcancel', dragEnd);
         function restartDragState(y) {
           state.startPos = state.pos = y;
           state.startTime = Date.now();
@@ -2204,14 +3291,13 @@ angular.module('ajoslin.scrolly', [
           return raw && raw.tagName === 'INPUT' || raw.tagName === 'SELECT' || raw.tagName === 'TEXTAREA';
         }
         function dragStart(e) {
-          if (!hasTouch && e.button)
-            return;
+          e = e.originalEvent || e;
           var target = e.target || e.srcElement;
           var point = e.touches ? e.touches[0] : e;
           if (parentWithAttr(target, 'data-dragger-ignore')) {
             return;
           }
-          if (_shouldBlurOnDrag && target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA' && target.tagName !== 'SELECT') {
+          if (_shouldBlurOnDrag && isInput(target)) {
             document.activeElement && document.activeElement.blur();
           }
           state.moved = false;
@@ -2227,6 +3313,7 @@ angular.module('ajoslin.scrolly', [
           });
         }
         function dragMove(e) {
+          e = e.originalEvent || e;
           e.preventDefault();
           if (state.dragging) {
             var point = e.touches ? e.touches[0] : e;
@@ -2254,10 +3341,12 @@ angular.module('ajoslin.scrolly', [
           }
         }
         function dragEnd(e) {
+          e = e.originalEvent || e;
           if (state.dragging) {
             state.dragging = false;
-            var duration = Date.now() - state.startTime;
-            var inactiveDrag = duration > _maxTimeMotionless;
+            var now = Date.now();
+            var duration = now - state.startTime;
+            var inactiveDrag = now - state.lastMoveTime > _maxTimeMotionless;
             dispatchEvent({
               type: 'end',
               startPos: state.startPos,
@@ -2287,20 +3376,28 @@ angular.module('ajoslin.scrolly', [
         };
         return self;
       }
-      $dragger.events = function () {
-        return events;
-      };
       return $dragger;
     }
   ];
 });angular.module('ajoslin.scrolly.scroller', [
   'ajoslin.scrolly.dragger',
-  'ajoslin.scrolly.scroller'
+  'ajoslin.scrolly.transformer',
+  'ajoslin.scrolly.desktop'
 ]).provider('$scroller', function () {
   var _decelerationRate = 0.001;
   this.decelerationRate = function (newDecelerationRate) {
     arguments.length && (_decelerationRate = newDecelerationRate);
     return _decelerationRate;
+  };
+  var _supportDesktop = true;
+  this.supportDesktop = function (newSupport) {
+    _supportDesktop = !!newSupport;
+    return _supportDesktop;
+  };
+  var _pastBoundaryScrollRate = 0.5;
+  this.pastBoundaryScrollRate = function (newRate) {
+    arguments.length && (_pastBoundaryScrollRate = newRate);
+    return _pastBoundaryScrollRate;
   };
   var _bounceBuffer = 40;
   this.bounceBuffer = function (newBounceBuffer) {
@@ -2317,35 +3414,42 @@ angular.module('ajoslin.scrolly', [
     arguments.length && (_bounceBackDistanceMulti = newBounceBackDistanceMult);
     return _bounceBackDistanceMulti;
   };
-  function getRect(elm) {
-    var style = window.getComputedStyle(elm);
-    var offTop = parseInt(style['margin-top'], 10) + parseInt(style['padding-top'], 10);
-    var offBottom = parseInt(style['margin-bottom'], 10) + parseInt(style['padding-bottom'], 10);
-    var height = parseInt(style.height, 10);
-    return {
-      top: offTop,
-      bottom: offBottom,
-      height: height
-    };
-  }
   function floor(n) {
     return n | 0;
-  }
-  function bounceTime(howMuchOut) {
-    return Math.abs(howMuchOut) * _bounceBackDistanceMulti + _bounceBackMinTime;
   }
   this.$get = [
     '$dragger',
     '$transformer',
     '$window',
-    function ($dragger, $transformer, $window) {
-      function scroller(elm) {
+    '$document',
+    '$desktopScroller',
+    function ($dragger, $transformer, $window, $document, $desktopScroller) {
+      $scroller.getContentRect = function (raw) {
+        var style = window.getComputedStyle(raw);
+        var offTop = parseInt(style.getPropertyValue('margin-top'), 10) + parseInt(style.getPropertyValue('padding-top'), 10);
+        var offBottom = parseInt(style.getPropertyValue('margin-bottom'), 10) + parseInt(style.getPropertyValue('padding-bottom'), 10);
+        var top = parseInt(style.getPropertyValue('top'), 10);
+        var bottom = parseInt(style.getPropertyValue('bottom'), 10);
+        var height = parseInt(style.getPropertyValue('height'), 10);
+        return {
+          top: offTop + (isNaN(top) ? 0 : top),
+          bottom: offBottom + (isNaN(bottom) ? 0 : bottom),
+          height: height
+        };
+      };
+      function bounceTime(howMuchOut) {
+        return Math.abs(howMuchOut) * _bounceBackDistanceMulti + _bounceBackMinTime;
+      }
+      function $scroller(elm) {
         var self = {};
         var raw = elm[0];
-        var transformer = new $transformer(elm);
-        var dragger = new $dragger(elm);
-        function calculateHeight() {
-          var rect = getRect(raw);
+        var transformer = self.transformer = new $transformer(elm);
+        var dragger = self.dragger = new $dragger(elm);
+        if (_supportDesktop) {
+          var desktopScroller = new $desktopScroller(elm, self);
+        }
+        self.calculateHeight = function () {
+          var rect = $scroller.getContentRect(raw);
           var screenHeight = $window.innerHeight;
           if (rect.height < screenHeight) {
             self.scrollHeight = 0;
@@ -2353,81 +3457,78 @@ angular.module('ajoslin.scrolly', [
             self.scrollHeight = rect.height - screenHeight + rect.top + rect.bottom;
           }
           return self.scrollHeight;
-        }
-        window.s = self;
-        calculateHeight();
-        function outOfBounds(pos) {
+        };
+        self.calculateHeight();
+        self.outOfBounds = function (pos) {
           if (pos > 0)
             return pos;
           if (pos < -self.scrollHeight)
             return pos + self.scrollHeight;
           return false;
-        }
+        };
         function dragListener(dragData) {
           switch (dragData.type) {
           case 'start':
             if (transformer.changing) {
               transformer.stop();
             }
-            calculateHeight();
+            self.calculateHeight();
             break;
           case 'move':
             var newPos = transformer.pos + dragData.delta;
-            if (outOfBounds(newPos)) {
+            if (self.outOfBounds(newPos)) {
               newPos = transformer.pos + floor(dragData.delta * 0.5);
             }
             transformer.setTo(newPos);
             break;
           case 'end':
-            if (outOfBounds(transformer.pos) || dragData.inactiveDrag) {
-              checkBoundaries();
+            if (self.outOfBounds(transformer.pos) || dragData.inactiveDrag) {
+              self.checkBoundaries();
             } else {
-              calculateHeight();
-              var momentum = calcMomentum(dragData);
+              var momentum = self.momentum(dragData);
               if (momentum.position !== transformer.pos) {
-                transformer.easeTo(momentum.position, momentum.time, checkBoundaries);
+                transformer.easeTo(momentum.position, momentum.time, self.checkBoundaries);
               }
             }
             break;
           }
         }
-        function checkBoundaries() {
-          calculateHeight();
-          var howMuchOut = outOfBounds(transformer.pos);
+        self.checkBoundaries = function () {
+          self.calculateHeight();
+          var howMuchOut = self.outOfBounds(transformer.pos);
           if (howMuchOut) {
             var newPosition = howMuchOut > 0 ? 0 : -self.scrollHeight;
             transformer.easeTo(newPosition, bounceTime(howMuchOut));
           }
-        }
-        function calcMomentum(dragData) {
+        };
+        self.momentum = function (dragData) {
+          self.calculateHeight();
           var speed = Math.abs(dragData.distance) / dragData.duration;
           var newPos = transformer.pos + speed * speed / (2 * _decelerationRate) * (dragData.distance < 0 ? -1 : 1);
           var time = speed / _decelerationRate;
-          var howMuchOver = outOfBounds(newPos);
+          var howMuchOver = self.outOfBounds(newPos);
           var distance;
           if (howMuchOver) {
             if (howMuchOver > 0) {
               newPos = Math.min(howMuchOver, _bounceBuffer);
-              distance = Math.abs(newPos - transformer.pos);
-              time = distance / speed;
             } else if (howMuchOver < 0) {
               newPos = Math.max(newPos, -(self.scrollHeight + _bounceBuffer));
-              distance = Math.abs(newPos - transformer.pos);
-              time = distance / speed;
             }
+            distance = Math.abs(newPos - transformer.pos);
+            time = distance / speed;
           }
           return {
             position: newPos,
             time: floor(time)
           };
-        }
+        };
         dragger.addListener(dragListener);
         elm.bind('$destroy', function () {
           dragger.removeListener(dragListener);
         });
         return self;
       }
-      return scroller;
+      return $scroller;
     }
   ];
 });angular.module('ajoslin.scrolly.transformer', []).factory('$nextFrame', [
@@ -2446,20 +3547,48 @@ angular.module('ajoslin.scrolly', [
   this.$get = [
     '$window',
     '$nextFrame',
-    function ($window, $nextFrame) {
-      var transformProp = 'webkitTransform';
-      var transformPropDash = '-webkit-transform';
-      var transitionProp = 'webkitTransition';
+    '$sniffer',
+    '$document',
+    function ($window, $nextFrame, $sniffer, $document) {
+      if (!$sniffer.vendorPrefix) {
+        if (angular.isString($document[0].body.style.webkitTransition)) {
+          $sniffer.vendorPrefix = 'webkit';
+        }
+      }
+      var prefix = $sniffer.vendorPrefix;
+      if (prefix && prefix !== 'Moz' && prefix !== 'O') {
+        prefix = prefix.substring(0, 1).toLowerCase() + prefix.substring(1);
+      }
+      var transformProp = prefix ? prefix + 'Transform' : 'transform';
+      var transformPropDash = prefix ? '-' + prefix.toLowerCase() + '-transform' : 'transform';
+      var transitionProp = prefix ? prefix + 'Transition' : 'transition';
       function transitionString(transitionTime) {
         return transformPropDash + ' ' + transitionTime + 'ms ' + timingFunction;
       }
-      function $transformer(elm) {
+      function transformGetterX(n) {
+        return 'translate3d(' + n + 'px,0,0)';
+      }
+      function transformGetterY(n) {
+        return 'translate3d(0,' + n + 'px,0)';
+      }
+      function $transformer(elm, options) {
         var self = {};
         var raw = elm[0];
+        var _transformGetter;
+        var _matrixIndex;
+        options = options || {};
+        if (options.translateX) {
+          _transformGetter = transformGetterX;
+          _matrixIndex = 4;
+        } else {
+          _transformGetter = transformGetterY;
+          _matrixIndex = 5;
+        }
         self.$$calcPosition = function () {
-          var matrix = $window.getComputedStyle(raw)[transformProp].replace(/[^0-9-.,]/g, '').split(',');
+          var style = $window.getComputedStyle(raw);
+          var matrix = (style[transformProp] || '').replace(/[^0-9-.,]/g, '').split(',');
           if (matrix.length > 1) {
-            return parseInt(matrix[5], 10);
+            return parseInt(matrix[_matrixIndex], 10);
           } else {
             return 0;
           }
@@ -2479,7 +3608,7 @@ angular.module('ajoslin.scrolly', [
             done && done();
           });
         };
-        self.easeTo = function (y, transitionTime, done) {
+        self.easeTo = function (n, transitionTime, done) {
           if (!angular.isNumber(transitionTime) || transitionTime < 0) {
             throw new Error('Expected a positive number for time, got \'' + transitionTime + '\'.');
           }
@@ -2492,7 +3621,7 @@ angular.module('ajoslin.scrolly', [
             raw.style[transitionProp] = transitionString(transitionTime);
             self.changing = true;
             $nextFrame(function () {
-              self.setTo(y);
+              self.setTo(n);
               transitionEndTimeout = $window.setTimeout(function () {
                 self.stop();
                 done && done();
@@ -2500,9 +3629,9 @@ angular.module('ajoslin.scrolly', [
             });
           }
         };
-        self.setTo = function (y) {
-          self.pos = y;
-          raw.style[transformProp] = 'translate3d(0,' + y + 'px,0)';
+        self.setTo = function (n) {
+          self.pos = n;
+          raw.style[transformProp] = _transformGetter(n);
         };
         return self;
       }
