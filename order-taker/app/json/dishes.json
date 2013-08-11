@@ -1,0 +1,20 @@
+)]}',
+[
+	{
+		"id": 1,
+		"name": "costolette d'agnello",
+		"category": "secondi"
+	},
+
+	{
+		"id": 2,
+		"name": "bucatini all'ammatriciana",
+		"category": "primi"
+	},
+
+	{
+		"id": 3,
+		"name": "salmone affumicato",
+		"category": "secondi"
+	}	
+]
