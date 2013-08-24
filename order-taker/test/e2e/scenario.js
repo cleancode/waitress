@@ -8,9 +8,12 @@ describe('Waitress app', function() {
             expect(browser().location().path()).toBe('/dishes'); 
         });
 
-        it('should have the send order and cancel order button', function(){
+        it('should have the send order when selecting at least one order', function(){
         	browser().navigateTo('/#/dishes');
-        	expect(element('span.ng-scope:contains("Invia la comanda")').count()).toBe(1);
+            element('*[jqm-li-link]').click();
+            select('jqmmodel').option('1');
+            element('a[href="#/dishes"]').click();
+        	expect(element('span.ng-scope:contains("Rivedi la comanda")').count()).toBe(1);
         });
     });
 

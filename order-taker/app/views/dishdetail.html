@@ -1,12 +1,12 @@
 <div jqm-page>
     <div jqm-header>
-        <a jqm-button iconpos="left" inline="true" icon="ui-icon-arrow-l" ng-click="dishes()" class="ui-btn-left" jqm-theme="a">Back</a>
-        <h1>Detail</h1>
+        <a jqm-button iconpos="left" inline="true" icon="ui-icon-arrow-l" href="#/dishes" class="ui-btn-left" jqm-theme="a">Back</a>
+        <h1>Dettaglio</h1>
     </div>
 
     <div jqm-fieldcontain>
-        <label class="ui-select">Portions:</label>
-        <jqm-select jqmmodel="dish.portions" jqmoptions="id as name for (id,name) in items" jqmitems="items"></jqm-select>
+        <label class="ui-select">Porzioni:</label>
+        <jqm-select jqmname="portions" jqmmodel="dish.portions" jqmoptions="id as name for (id,name) in items" jqmitems="items"></jqm-select>
     </div>
 
 </div>

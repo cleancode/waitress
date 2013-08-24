@@ -114,26 +114,6 @@ module.exports = function (grunt) {
 			},
 			server: '.tmp'
 		},
-		coffee: {
-			dist: {
-				files: [{
-					expand: true,
-					cwd: '<%= yeoman.app %>/scripts',
-					src: '{,*/}*.coffee',
-					dest: '.tmp/scripts',
-					ext: '.js'
-				}]
-			},
-			test: {
-				files: [{
-					expand: true,
-					cwd: 'test/spec',
-					src: '{,*/}*.coffee',
-					dest: '.tmp/spec',
-					ext: '.js'
-				}]
-			}
-		},
 		compass: {
 			options: {
 				sassDir: '<%= yeoman.app %>/styles',
@@ -224,7 +204,7 @@ module.exports = function (grunt) {
 				files: [{
 					expand: true,
 					cwd: '<%= yeoman.app %>',
-					src: ['*.html', 'views/*.html'],
+					src: ['*.html'],
 					dest: '<%= yeoman.dist %>'
 				}]
 			}
@@ -240,10 +220,9 @@ module.exports = function (grunt) {
 					src: [
 						'*.{ico,png,txt}',
 						'.htaccess',
-						'lib/**/*',
-						'bower_components/**/*',
 						'images/{,*/}*.{gif,webp,svg}',
-						'styles/fonts/*'
+						'styles/fonts/*',
+						'json/*'
 					]
 				}, {
 					expand: true,
@@ -252,24 +231,39 @@ module.exports = function (grunt) {
 					src: [
 						'generated/*'
 					]
+				}, {
+					expand: true,
+					cwd: '<%= yeoman.app %>/bower_components/jquery-mobile-bower/css/images',
+					dest: '<%= yeoman.dist %>/styles/images',
+					src: [
+						'*.{png,gif}'
+					]
 				}]
 			}
 		},
 		concurrent: {
 			server: [
-				'coffee:dist',
 				'compass:server'
 			],
 			test: [
-				'coffee',
 				'compass'
 			],
 			dist: [
-				'coffee',
 				'compass:dist',
 				'imagemin',
 				'htmlmin'
 			]
+		},
+		ngtemplates: {
+			dist: {
+				options: {
+					base: '<%= yeoman.app %>',
+					module: 'waitressApp',
+					concat: '<%= yeoman.dist %>/scripts/scripts.js'
+				},
+				src: '<%= yeoman.app %>/views/{,*/}*.html',
+				dest: '.tmp/templates.js'
+			}
 		},
 		karma: {
 			unit: {
@@ -328,6 +322,7 @@ module.exports = function (grunt) {
 		'clean:dist',
 		'useminPrepare',
 		'concurrent:dist',
+		'ngtemplates',
 		'concat',
 		'copy',
 		'cdnify',

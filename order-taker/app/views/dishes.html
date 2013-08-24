@@ -1,5 +1,5 @@
 <div jqm-page>
-    <div jqm-header><h1>Pick a dish</h1></div>
+    <div jqm-header><h1>Componi</h1></div>
 
     <div jqm-listview inset="true">
     	<div ng-repeat="dish in dishes | orderBy:'category'">
@@ -12,9 +12,6 @@
         </div>
     </div>
 
-    <div jqm-controlgroup>
-        <div jqm-button="submit" ng-click="saveOrder()" jqm-theme="b" icon="ui-icon-check" iconpos="left">Invia la comanda</div>
-        <div jqm-button="reset" ng-click="resetOrder()" jqm-theme="c" icon="ui-icon-minus" iconpos="left">Resetta la comanda</div>
-    </div>
+    <a jqm-button ng-if="checkorder" ng-click="neworder()" jqm-theme="b" icon="ui-icon-arrow-r" iconpos="right" >Rivedi la comanda</a>
 
 </div>

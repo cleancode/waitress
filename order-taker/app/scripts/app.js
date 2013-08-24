@@ -6,16 +6,27 @@ angular.module('waitressApp', ['jqm','waitressApp.services','waitressApp.directi
 		.when('/dishes', {
 			templateUrl: 'views/dishes.html',
 			controller: 'DishesCtrl',
+			animation: 'page-slide-reverse',
 			resolve: {
-				dishes: function(DishesLoader){
+				dishes: ['DishesLoader', function(DishesLoader){
 					return DishesLoader();
-				}
+				}]
 			}
 		})
 		.when('/dish/:dishId',{
 			controller: 'DishdetailCtrl',
 			animation: 'page-slide',
 			templateUrl: 'views/dishdetail.html'
+		})
+		.when('/order/new',{
+			controller: 'NeworderCtrl',
+			animation: 'page-slide',
+			templateUrl: 'views/neworder.html',
+			resolve: {
+				dishes: ['DishesLoader', function(DishesLoader){
+					return DishesLoader();
+				}]
+			}			
 		})
 		.otherwise({
 			redirectTo: '/dishes' 

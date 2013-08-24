@@ -1,0 +1,22 @@
+<div jqm-page>
+    <div jqm-header>
+        <a jqm-button iconpos="left" inline="true" icon="ui-icon-arrow-l" href="#/dishes" class="ui-btn-left" jqm-theme="a">Back</a>
+        <h1>Conferma</h1>
+    </div>
+
+    <h4>Riassunto ordine:</h4>
+    <ul>
+    	<li ng-repeat="dish in order.dishes">
+    		{{dish.name}}, {{dish.portions}} porzioni
+    	</li>
+    </ul>
+
+    <h4>Informazioni aggiuntive:</h4>
+	<div jqm-fieldcontain>
+        <label class="ui-select">Tavolo:</label>
+        <div jqm-textinput ng-model="order.table"></div>
+    </div>
+
+    <div jqm-button="submit" ng-if="order.table" ng-click="saveOrder()" jqm-theme="b" icon="ui-icon-check" iconpos="left" >Invia la comanda</div>
+
+</div>

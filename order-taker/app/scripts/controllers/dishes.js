@@ -1,7 +1,7 @@
 
 
 angular.module('waitressApp')
-	.controller('DishesCtrl', ['$scope','$location', 'dishes', 'Order', 'orderService', '$loadDialog', function ($scope, $location, dishes, Order, orderService, $loadDialog) {	
+	.controller('DishesCtrl', ['$scope','$location', 'dishes', 'orderService', function ($scope, $location, dishes, orderService) {	
 	'use strict';
 		
 	var categories = [];
@@ -16,27 +16,18 @@ angular.module('waitressApp')
 	});
 
 	$scope.dishes = dishes;
+	$scope.checkorder = orderService.hasOrder();
 
 	$scope.details = function(dish){
 		$location.path('/dish/' + dish.id);
 	};
 
-	$scope.saveOrder = function(){
-		$loadDialog.show('Inviando la commessa...');
-		Order.save(orderService.getCurrentOrder()).$then(function(){
-			alert('Commessa inviata');
-			orderService.resetCurrentOrder();
-		}, function(){
-			alert('Errore nell\'invio');
-		});
-	};
-
-	$scope.resetOrder = function(){
-		orderService.resetCurrentOrder();
-	};
-
 	$scope.getPortions = function(dishid){
 		return orderService.getDishdetail(dishid).portions;
+	};
+
+	$scope.neworder = function(){
+		$location.path('/order/new');
 	};
 
 }]);

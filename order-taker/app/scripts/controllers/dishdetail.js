@@ -15,12 +15,8 @@ angular.module('waitressApp')
 	$scope.dish = orderService.getDishdetail($routeParams.dishId);	
 	$scope.dish.portions = $scope.dish.portions.toString();
 
-
 	$scope.$watch('dish.portions', function(value){
-		orderService.setDishdetail($routeParams.dishId, { id: $routeParams.dishId, portions: value });
+		orderService.setDishdetail($routeParams.dishId, { id: $routeParams.dishId, portions: parseInt(value,10) });
 	});
 
-	$scope.dishes = function(){
-		window.history.back();
-	};
 }]);

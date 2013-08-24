@@ -33,7 +33,8 @@ angular.module("waitressApp.directives",[])
             scope: {
                 jqmmodel: '=',
                 items: '=jqmitems',
-                jqmoptions: '@'
+                jqmoptions: '@',
+                jqmname: '@'
             },
             templateUrl: 'views/directives/jqmselect.html'
         };

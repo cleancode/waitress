@@ -16,7 +16,6 @@
     "grunt-contrib-htmlmin": "~0.1.3",
     "grunt-contrib-imagemin": "~0.1.4",
     "grunt-contrib-watch": "~0.4.0",
-    "grunt-usemin": "~0.1.11",
     "grunt-rev": "~0.1.0",
     "grunt-karma": "~0.4.3",
     "grunt-open": "~0.2.0",
@@ -24,7 +23,9 @@
     "matchdep": "~0.1.2",
     "connect-livereload": "~0.2.0",
     "grunt-google-cdn": "~0.2.0",
-    "grunt-ngmin": "~0.0.2"
+    "grunt-ngmin": "~0.0.2",
+    "grunt-usemin": "git+https://github.com/yeoman/grunt-usemin.git",
+    "grunt-angular-templates": "~0.3.10"
   },
   "engines": {
     "node": ">=0.8.0"

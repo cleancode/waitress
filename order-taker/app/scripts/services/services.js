@@ -22,6 +22,7 @@ services.service('orderService', function(){
 	'use strict';
 
 	var currentDishes = {};
+	var currentTable;
 
 	return {
 		getDishdetail: function(id){
@@ -37,10 +38,17 @@ services.service('orderService', function(){
 					dishes.push(currentDishes[key]);
 				}
 			}
-			return {dishes: dishes};
+			return {dishes: dishes, table: currentTable};
 		},
 		resetCurrentOrder: function(){
 			currentDishes = {};
+		},
+		setTable: function(table){
+			console.log('setto',table);
+			currentTable = table;
+		},
+		hasOrder: function(){
+			return Object.keys(currentDishes).length > 0;
 		}
 	};
 });
