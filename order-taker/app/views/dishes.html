@@ -1,0 +1,17 @@
+<div jqm-page>
+    <div jqm-header><h1>Componi</h1></div>
+
+    <div jqm-listview inset="true">
+    	<div ng-repeat="dish in dishes | orderBy:'category'">
+        	<div ng-if="!dish.iscategory" jqm-li-link ng-click="details(dish)">
+            	{{dish.name}} <small>({{ getPortions(dish.id) }} porzioni)</small>
+        	</div>
+        	<div ng-if="dish.iscategory" jqm-li-divider >
+            	{{dish.category}}
+        	</div>        	
+        </div>
+    </div>
+
+    <a jqm-button ng-if="checkorder" ng-click="neworder()" jqm-theme="b" icon="ui-icon-arrow-r" iconpos="right" >Rivedi la comanda</a>
+
+</div>
