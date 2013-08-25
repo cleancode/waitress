@@ -1,7 +1,9 @@
-// Generated on 2013-07-20 using generator-angular 0.3.0
+// Generated on 2013-08-24 using generator-angular 0.4.0
 var LIVERELOAD_PORT = 35729;
-var lrSnippet = require('connect-livereload')({ port: LIVERELOAD_PORT });
-var mountFolder = function (connect, dir) {
+var lrSnippet = require('connect-livereload')({
+	port: LIVERELOAD_PORT
+});
+var mountFolder = function(connect, dir) {
 	'use strict';
 	return connect.static(require('path').resolve(dir));
 };
@@ -12,10 +14,10 @@ var mountFolder = function (connect, dir) {
 // use this if you want to recursively match all subfolders:
 // 'test/spec/**/*.js'
 
-module.exports = function (grunt) {
-	'use strict'; 
-	// load all grunt tasks
-	require('matchdep').filterDev('grunt-*').forEach(grunt.loadNpmTasks);
+module.exports = function(grunt) {
+	'use strict';
+	require('load-grunt-tasks')(grunt);
+	require('time-grunt')(grunt);
 
 	// configurable paths
 	var yeomanConfig = {
@@ -36,83 +38,19 @@ module.exports = function (grunt) {
 			},
 			js: {
 				files: ['<%= yeoman.app %>/scripts/{,*/}*.js'],
-				tasks: ['jshint'] 
-			},       
+				tasks: ['jshint']
+			},
 			livereload: {
 				options: {
 					livereload: LIVERELOAD_PORT
 				},
 				files: [
 					'<%= yeoman.app %>/{,*/}*.html',
-					'{.tmp,<%= yeoman.app %>}/styles/{,*/}*.css',
+					'.tmp/styles/{,*/}*.css',
+					'{.tmp,<%= yeoman.app %>}/scripts/{,*/}*.js',
 					'<%= yeoman.app %>/images/{,*/}*.{png,jpg,jpeg,gif,webp,svg}'
 				]
 			}
-		},
-		connect: {
-			options: {
-				port: 9000,
-				// Change this to '0.0.0.0' to access the server from outside.
-				hostname: '0.0.0.0'
-			},
-			livereload: {
-				options: {
-					middleware: function (connect) {
-						return [
-							lrSnippet,
-							mountFolder(connect, '.tmp'),
-							mountFolder(connect, yeomanConfig.app)
-						];
-					}
-				}
-			},
-			test: {
-				options: {
-					middleware: function (connect) {
-						return [
-							mountFolder(connect, '.tmp'),
-							mountFolder(connect, 'test')
-						];
-					}
-				}
-			},
-			dist: {
-				options: {
-					middleware: function (connect) {
-						return [
-							mountFolder(connect, yeomanConfig.dist)
-						];
-					}
-				}
-			}
-		},
-		open: {
-			server: {
-				url: 'http://localhost:<%= connect.options.port %>'
-			}
-		},
-		jshint: {
-			options: {
-				jshintrc: '.jshintrc',
-				"force": true
-			}, 
-			all: [
-				'<%= yeoman.app %>/scripts/{,*/}*.js',
-				'Gruntfile.js'
-			]
-		},    
-		clean: {
-			dist: {
-				files: [{
-					dot: true,
-					src: [
-						'.tmp',
-						'<%= yeoman.dist %>/*',
-						'!<%= yeoman.dist %>/.git*'
-					]
-				}]
-			},
-			server: '.tmp'
 		},
 		compass: {
 			options: {
@@ -134,6 +72,82 @@ module.exports = function (grunt) {
 					debugInfo: true
 				}
 			}
+		},
+		connect: {
+			options: {
+				port: 9000,
+				// Change this to '0.0.0.0' to access the server from outside.
+				hostname: 'localhost'
+			},
+			livereload: {
+				options: {
+					middleware: function(connect) {
+						return [
+							lrSnippet,
+							mountFolder(connect, '.tmp'),
+							mountFolder(connect, yeomanConfig.app)
+						];
+					}
+				}
+			},
+			test: {
+				options: {
+					middleware: function(connect) {
+						return [
+							mountFolder(connect, '.tmp'),
+							mountFolder(connect, 'test')
+						];
+					}
+				}
+			},
+			dist: {
+				options: {
+					middleware: function(connect) {
+						return [
+							mountFolder(connect, yeomanConfig.dist)
+						];
+					}
+				}
+			}
+		},
+		open: {
+			server: {
+				url: 'http://localhost:<%= connect.options.port %>'
+			}
+		},
+		ngtemplates: {
+			dist: {
+				options: {
+					base: '<%= yeoman.app %>',
+					module: 'orderTakerApp',
+					concat: '<%= yeoman.dist %>/scripts/scripts.js'
+				},
+				src: '<%= yeoman.app %>/views/{,*/}*.html',
+				dest: '.tmp/templates.js'
+			}
+		},		
+		clean: {
+			dist: {
+				files: [{
+					dot: true,
+					src: [
+						'.tmp',
+						'<%= yeoman.dist %>/*',
+						'!<%= yeoman.dist %>/.git*'
+					]
+				}]
+			},
+			server: '.tmp'
+		},
+		jshint: {
+			options: {
+				jshintrc: '.jshintrc',
+				"force": true
+			},
+			all: [
+				'<%= yeoman.app %>/scripts/{,*/}*.js',
+				'Gruntfile.js'
+			]
 		},
 		// not used since Uglify task does concat,
 		// but still available if needed
@@ -175,6 +189,16 @@ module.exports = function (grunt) {
 				}]
 			}
 		},
+		svgmin: {
+			dist: {
+				files: [{
+					expand: true,
+					cwd: '<%= yeoman.app %>/images',
+					src: '{,*/}*.svg',
+					dest: '<%= yeoman.dist %>/images'
+				}]
+			}
+		},
 		cssmin: {
 			// By default, your `index.html` <!-- Usemin Block --> will take care of
 			// minification. This option is pre-configured if you do not wish to use
@@ -191,15 +215,15 @@ module.exports = function (grunt) {
 		htmlmin: {
 			dist: {
 				options: {
-					/*removeCommentsFromCDATA: true,
-					// https://github.com/yeoman/grunt-usemin/issues/44
-					//collapseWhitespace: true,
-					collapseBooleanAttributes: true,
-					removeAttributeQuotes: true,
-					removeRedundantAttributes: true,
-					useShortDoctype: true,
-					removeEmptyAttributes: true,
-					removeOptionalTags: true*/
+			/*removeCommentsFromCDATA: true,
+			// https://github.com/yeoman/grunt-usemin/issues/44
+			//collapseWhitespace: true,
+			collapseBooleanAttributes: true,
+			removeAttributeQuotes: true,
+			removeRedundantAttributes: true,
+			useShortDoctype: true,
+			removeEmptyAttributes: true,
+			removeOptionalTags: true*/
 				},
 				files: [{
 					expand: true,
@@ -251,19 +275,9 @@ module.exports = function (grunt) {
 			dist: [
 				'compass:dist',
 				'imagemin',
+				'svgmin',
 				'htmlmin'
 			]
-		},
-		ngtemplates: {
-			dist: {
-				options: {
-					base: '<%= yeoman.app %>',
-					module: 'waitressApp',
-					concat: '<%= yeoman.dist %>/scripts/scripts.js'
-				},
-				src: '<%= yeoman.app %>/views/{,*/}*.html',
-				dest: '.tmp/templates.js'
-			}
 		},
 		karma: {
 			unit: {
@@ -297,7 +311,7 @@ module.exports = function (grunt) {
 		}
 	});
 
-	grunt.registerTask('server', function (target) {
+	grunt.registerTask('server', function(target) {
 		if (target === 'dist') {
 			return grunt.task.run(['build', 'open', 'connect:dist:keepalive']);
 		}
@@ -324,7 +338,7 @@ module.exports = function (grunt) {
 		'concurrent:dist',
 		'ngtemplates',
 		'concat',
-		'copy',
+		'copy:dist',
 		'cdnify',
 		'ngmin',
 		'cssmin',

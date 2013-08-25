@@ -1,6 +1,6 @@
 
 
-var services = angular.module("waitressApp.services",['ngResource']);
+var services = angular.module("orderTakerApp.services",['ngResource']);
 
 services.factory('DishesLoader',['$q','$http', function($q, $http){
 	'use strict';

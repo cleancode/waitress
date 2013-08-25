@@ -3,7 +3,7 @@
 describe('Dishes', function(){
 	var mockBackend, loader;
 
-	beforeEach(module('waitressApp'));
+	beforeEach(module('orderTakerApp'));
 
 	beforeEach(inject(function($httpBackend, DishesLoader){
 		mockBackend = $httpBackend;
@@ -30,7 +30,7 @@ describe('Dishes', function(){
 describe('orderService', function(){
 	var service;
 
-	beforeEach(module('waitressApp'));
+	beforeEach(module('orderTakerApp'));
 
 	beforeEach(inject(function(orderService){
 		service = orderService;

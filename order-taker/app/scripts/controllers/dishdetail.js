@@ -1,4 +1,4 @@
-angular.module('waitressApp')
+angular.module('orderTakerApp')
 	.controller('DishdetailCtrl', ['$scope', 'orderService', '$routeParams', function ($scope, orderService, $routeParams) {	
 	'use strict';
 

@@ -1,6 +1,6 @@
 
 
-angular.module("waitressApp.directives",[])
+angular.module("orderTakerApp.directives",[])
 
     .directive('jqmFieldcontain', function(){
         'use strict';

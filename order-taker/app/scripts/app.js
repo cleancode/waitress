@@ -1,4 +1,4 @@
-angular.module('waitressApp', ['jqm','waitressApp.services','waitressApp.directives'])
+angular.module('orderTakerApp', ['jqm','orderTakerApp.services','orderTakerApp.directives'])
 	.config(['$routeProvider', '$httpProvider', function ($routeProvider, $httpProvider) {
 		'use strict';
 

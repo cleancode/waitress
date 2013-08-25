@@ -1,9 +1,0 @@
-// creare l'applicazione
-
-npm install -g yo grunt-cli bower karma phantomjs
-installare phantomjs
-
-yo angular --minsafe
-
-// http://likesalmon.net/enable-e2e-testing-with-yeoman-generator-angular/
-

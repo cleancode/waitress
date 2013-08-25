@@ -1,6 +1,6 @@
 
 
-angular.module('waitressApp')
+angular.module('orderTakerApp')
 	.controller('DishesCtrl', ['$scope','$location', 'dishes', 'orderService', function ($scope, $location, dishes, orderService) {	
 	'use strict';
 		

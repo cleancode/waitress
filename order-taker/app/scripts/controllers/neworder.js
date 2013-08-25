@@ -1,4 +1,4 @@
-angular.module('waitressApp')
+angular.module('orderTakerApp')
 	.controller('NeworderCtrl', ['$scope', 'orderService', 'dishes', 'Order', '$loadDialog', function ($scope, orderService, dishes, Order, $loadDialog) {	
 	'use strict';
 

@@ -2,7 +2,7 @@
 
 describe('DishesCtrl', function(){
 
-	beforeEach(module('waitressApp'));
+	beforeEach(module('orderTakerApp'));
 
 	var $scope, ctrl;
 

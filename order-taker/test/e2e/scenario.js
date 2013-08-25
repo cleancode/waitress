@@ -17,4 +17,4 @@ describe('Waitress app', function() {
         });
     });
 
-});
+}); 
