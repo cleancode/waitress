@@ -9,7 +9,8 @@
   "author": "",
   "license": "BSD-2-Clause",
   "dependencies": {
-    "express": "~3.4.4"
+    "express": "~3.4.4",
+    "mongoose": "~3.8.0"
   },
   "devDependencies": {
     "chai": "~1.8.1",

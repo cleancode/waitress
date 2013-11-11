@@ -11,3 +11,7 @@
   * install mocha + chai and add them as development dependencies
   * usage example of mocha + chai test/unit/example.js
   * test/acceptance/hello.js
+
+## List of dishes
+* install mongoose and add it as dependency
+* 
