@@ -1,4 +1,5 @@
-var app = require("./../../app"),
+var helper = require("./_helper"),
+    app = require("./../../app"),
     expect = require("chai").expect,
     http = require("http"),
     request = require("request")
@@ -6,10 +7,9 @@ var app = require("./../../app"),
 describe("Waitress", function() {
   describe("GET /hello", function() {
     before(function(done) {
-      var port = 9191
-      this.server = http.createServer(app).listen(port, done)
+      this.server = http.createServer(app).listen(app.get("port"), done)
       request.get.route = function(route, expectation, done) {
-        request.get("http://localhost:" + port + route, function(err, res, body) {
+        request.get("http://localhost:" + app.get("port") + route, function(err, res, body) {
           if (err) return done(err)
           expectation(err, res, body)
           done()

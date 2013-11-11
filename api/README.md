@@ -14,4 +14,4 @@
 
 ## List of dishes
 * install mongoose and add it as dependency
-* 
+* refactor application configuration by environment
