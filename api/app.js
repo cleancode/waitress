@@ -1,4 +1,6 @@
-var express = require("express"), util = require("util")
+var express = require("express"),
+    mongoose = require("mongoose")
+    util = require("util")
 
 var app = express()
 
@@ -18,5 +20,21 @@ app.get("/hello", function(req, res) {
   )
 })
 
+app.get("/dishes", function(req, res) {
+  mongoose.model("Dish").find().exec(function(err, docs) {
+    res.json(docs)
+  })
+})
+
+mongoose.connect(app.get("db"))
+
+mongoose.model("Dish", new mongoose.Schema(
+  {name: String, category: String},
+  {toJSON: {transform: function(doc, ret) {
+    ret.id = ret._id
+    delete ret._id
+    delete ret.__v
+  }}}
+))
 
 module.exports = app
