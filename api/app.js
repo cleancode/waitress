@@ -37,4 +37,10 @@ mongoose.model("Dish", new mongoose.Schema(
   }}}
 ))
 
+if (require.main === module) {
+  require("http").createServer(app).listen(app.get("port"), function() {
+    console.log("Waitress server is running on port %d", app.get("port"))
+  })
+}
+
 module.exports = app
