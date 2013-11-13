@@ -38,8 +38,12 @@ mongoose.model("Dish", new mongoose.Schema(
 ))
 
 if (require.main === module) {
-  require("http").createServer(app).listen(app.get("port"), function() {
-    console.log("Waitress server is running on port %d", app.get("port"))
+  mongoose.connection.on("connected", function() {
+    require("./lib/fixtures").load(mongoose.connection.db, function() {
+      require("http").createServer(app).listen(app.get("port"), function() {
+        console.log("Waitress server is running on port %d", app.get("port"))
+      })
+    })
   })
 }
 

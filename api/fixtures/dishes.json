@@ -1,0 +1,20 @@
+[
+  {"name": "ravioli di caprino e olive", "category": "primi"},
+  {"name": "tortelloni verdi al radicchio e provola affumicata", "category": "primi"},
+  {"name": "ravioli di patate e bufala ai porcini", "category": "primi"},
+  {"name": "risotto ai porcini", "category": "primi"},
+  {"name": "filetto di maiale alle mele", "category": "secondi"},
+  {"name": "stracotto di manzo chianino", "category": "secondi"},
+  {"name": "filetto di manzo ai tre pepi", "category": "secondi"},
+  {"name": "abbacchio tartufato", "category": "secondi"},
+  {"name": "patate al forno", "category": "contorni"},
+  {"name": "insalatina di stagione", "category": "contorni"},
+  {"name": "torta alle pere e cioccolato", "category": "dolci"},
+  {"name": "crostata di albicocche", "category": "dolci"},
+  {"name": "tortino di zucchine e pomodori", "category": "antipasti"},
+  {"name": "bruschette al tonno e pepe verde", "category": "antipasti"},
+  {"name": "acqua minerale naturale", "category": "bevande"},
+  {"name": "acqua minerale frizzante", "category": "bevande"},
+  {"name": "vino bianco della casa", "category": "bevande"},
+  {"name": "vino rosso della casa", "category": "bevande"}
+]
