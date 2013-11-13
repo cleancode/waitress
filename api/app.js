@@ -14,6 +14,10 @@ app.configure("test", function() {
   app.set("db", "mongodb://localhost/waitress-test")
 })
 
+app.use(express.favicon())
+app.use(express.logger("dev"))
+app.use(require("cors")())
+
 app.get("/hello", function(req, res) {
   res.end(
     util.format("Hello %s", req.query.who || "World")
