@@ -1,7 +1,17 @@
 process.env.NODE_ENV = "test"
 
 var http = require("http"),
-    request = require("request")
+    request = require("request"),
+    _ = require("underscore")
+
+
+module.exports.loadFixtures = function(app) {
+  return function(done) {
+    require("mongodb").MongoClient.connect(app.get("db"), function(err, db) {
+      require("./../../lib/fixtures").load(db, done)
+    })
+  }
+}
 
 module.exports.startServer = function(app) {
   return function(done) {
