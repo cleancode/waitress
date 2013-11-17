@@ -7,7 +7,7 @@ services.factory('DishesLoader',['$q','$http', function($q, $http){
 	
 	return function(){
 		var delay = $q.defer();
-		$http.get('json/dishes.json').
+		$http.get('http://127.0.0.1:3000/dishes').
 			success(function(data){
 				delay.resolve(data);
 			}).

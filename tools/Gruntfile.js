@@ -21,7 +21,7 @@ module.exports = function(grunt) {
 
 	// configurable paths
 	var yeomanConfig = {
-		app: 'app',
+		ordertaker: '../frontend/order-taker',
 		dist: 'dist'
 	};
 
@@ -33,34 +33,46 @@ module.exports = function(grunt) {
 		yeoman: yeomanConfig,
 		watch: {
 			compass: {
-				files: ['<%= yeoman.app %>/styles/{,*/}*.{scss,sass}'],
+				files: ['<%= yeoman.ordertaker %>/styles/{,*/}*.{scss,sass}'],
 				tasks: ['compass:server']
 			},
 			js: {
-				files: ['<%= yeoman.app %>/scripts/{,*/}*.js'],
+				files: ['<%= yeoman.ordertaker %>/scripts/{,*/}*.js'],
 				tasks: ['jshint']
 			},
+			express: {
+				files:  [ '../api/app.js', '../api/lib/*.js'],
+				tasks:  [ 'express' ],
+				options: {
+					nospawn: true,
+					livereload: true
+				}
+			},
+			mocha: {
+				files:  [ '../api/**/*.js'],
+				tasks:  [ 'mochaTest'],
+			},						
 			livereload: {
 				options: {
 					livereload: LIVERELOAD_PORT
 				},
 				files: [
-					'<%= yeoman.app %>/{,*/}*.html',
+					'<%= yeoman.ordertaker %>/{,*/}*.html',
 					'.tmp/styles/{,*/}*.css',
-					'{.tmp,<%= yeoman.app %>}/scripts/{,*/}*.js',
-					'<%= yeoman.app %>/images/{,*/}*.{png,jpg,jpeg,gif,webp,svg}'
+					'{.tmp,<%= yeoman.ordertaker %>}/scripts/{,*/}*.js',
+					'<%= yeoman.ordertaker %>/images/{,*/}*.{png,jpg,jpeg,gif,webp,svg}'
 				]
 			}
 		},
 		compass: {
 			options: {
-				sassDir: '<%= yeoman.app %>/styles',
+				sassDir: '<%= yeoman.ordertaker %>/styles',
 				cssDir: '.tmp/styles',
 				generatedImagesDir: '.tmp/images/generated',
-				imagesDir: '<%= yeoman.app %>/images',
-				javascriptsDir: '<%= yeoman.app %>/scripts',
-				fontsDir: '<%= yeoman.app %>/styles/fonts',
-				importPath: '<%= yeoman.app %>/bower_components',
+				imagesDir: '<%= yeoman.ordertaker %>/images',
+				javascriptsDir: '<%= yeoman.ordertaker %>/scripts',
+				fontsDir: '<%= yeoman.ordertaker %>/styles/fonts',
+				importPath: 'mounts/bower_components',
 				httpImagesPath: '/images',
 				httpGeneratedImagesPath: '/images/generated',
 				httpFontsPath: '/styles/fonts',
@@ -73,6 +85,25 @@ module.exports = function(grunt) {
 				}
 			}
 		},
+
+		// express server
+		express: {
+			mock: {
+				options: {
+					script: '../api/app.js'
+				}
+			}
+		},
+
+		mochaTest: {
+			test: {
+				options: {
+					reporter: 'spec'
+				},
+				src: ['../api/test/**/*.js']
+			}
+		},	
+			
 		connect: {
 			options: {
 				port: 9000,
@@ -85,7 +116,8 @@ module.exports = function(grunt) {
 						return [
 							lrSnippet,
 							mountFolder(connect, '.tmp'),
-							mountFolder(connect, yeomanConfig.app)
+							mountFolder(connect, 'mounts'),
+							mountFolder(connect, yeomanConfig.ordertaker)
 						];
 					}
 				}
@@ -118,11 +150,11 @@ module.exports = function(grunt) {
 		ngtemplates: {
 			dist: {
 				options: {
-					base: '<%= yeoman.app %>',
+					base: '<%= yeoman.ordertaker %>',
 					module: 'orderTakerApp',
 					concat: '<%= yeoman.dist %>/scripts/scripts.js'
 				},
-				src: '<%= yeoman.app %>/views/{,*/}*.html',
+				src: '<%= yeoman.ordertaker %>/views/{,*/}*.html',
 				dest: '.tmp/templates.js'
 			}
 		},		
@@ -145,7 +177,7 @@ module.exports = function(grunt) {
 				"force": true
 			},
 			all: [
-				'<%= yeoman.app %>/scripts/{,*/}*.js',
+				'<%= yeoman.ordertaker %>/scripts/{,*/}*.js',
 				'Gruntfile.js'
 			]
 		},
@@ -167,7 +199,7 @@ module.exports = function(grunt) {
 			}
 		},
 		useminPrepare: {
-			html: '<%= yeoman.app %>/index.html',
+			html: '<%= yeoman.ordertaker %>/index.html',
 			options: {
 				dest: '<%= yeoman.dist %>'
 			}
@@ -183,7 +215,7 @@ module.exports = function(grunt) {
 			dist: {
 				files: [{
 					expand: true,
-					cwd: '<%= yeoman.app %>/images',
+					cwd: '<%= yeoman.ordertaker %>/images',
 					src: '{,*/}*.{png,jpg,jpeg}',
 					dest: '<%= yeoman.dist %>/images'
 				}]
@@ -193,7 +225,7 @@ module.exports = function(grunt) {
 			dist: {
 				files: [{
 					expand: true,
-					cwd: '<%= yeoman.app %>/images',
+					cwd: '<%= yeoman.ordertaker %>/images',
 					src: '{,*/}*.svg',
 					dest: '<%= yeoman.dist %>/images'
 				}]
@@ -227,7 +259,7 @@ module.exports = function(grunt) {
 				},
 				files: [{
 					expand: true,
-					cwd: '<%= yeoman.app %>',
+					cwd: '<%= yeoman.ordertaker %>',
 					src: ['*.html'],
 					dest: '<%= yeoman.dist %>'
 				}]
@@ -239,7 +271,7 @@ module.exports = function(grunt) {
 				files: [{
 					expand: true,
 					dot: true,
-					cwd: '<%= yeoman.app %>',
+					cwd: '<%= yeoman.ordertaker %>',
 					dest: '<%= yeoman.dist %>',
 					src: [
 						'*.{ico,png,txt}',
@@ -257,7 +289,7 @@ module.exports = function(grunt) {
 					]
 				}, {
 					expand: true,
-					cwd: '<%= yeoman.app %>/bower_components/jquery-mobile-bower/css/images',
+					cwd: 'mount/bower_components/jquery-mobile-bower/css/images',
 					dest: '<%= yeoman.dist %>/styles/images',
 					src: [
 						'*.{png,gif}'
@@ -318,6 +350,7 @@ module.exports = function(grunt) {
 
 		grunt.task.run([
 			'clean:server',
+			'express',
 			'concurrent:server',
 			'connect:livereload',
 			'open',

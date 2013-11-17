@@ -39,7 +39,9 @@
     "karma": "~0.10.2",
     "karma-ng-html2js-preprocessor": "~0.1.0",
     "grunt-usemin": "~0.1.12",
-    "grunt-angular-templates": "~0.3.10"
+    "grunt-angular-templates": "~0.3.10",
+    "grunt-express-server": "~0.4.5",
+    "grunt-mocha-test": "~0.7.0"
   },
   "engines": {
     "node": ">=0.8.0"
