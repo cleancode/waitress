@@ -21,7 +21,9 @@ module.exports = function(grunt) {
 
 	// configurable paths
 	var yeomanConfig = {
+		kitchen: '../frontend/kitchen',
 		ordertaker: '../frontend/order-taker',
+		frontend: '../frontend',
 		dist: 'dist'
 	};
 
@@ -33,11 +35,11 @@ module.exports = function(grunt) {
 		yeoman: yeomanConfig,
 		watch: {
 			compass: {
-				files: ['<%= yeoman.ordertaker %>/styles/{,*/}*.{scss,sass}'],
+				files: ['<%= yeoman.ordertaker %>/styles/{,*/}*.{scss,sass}', '<%= yeoman.kitchen %>/styles/{,*/}*.{scss,sass}'],
 				tasks: ['compass:server']
 			},
 			js: {
-				files: ['<%= yeoman.ordertaker %>/scripts/{,*/}*.js'],
+				files: ['<%= yeoman.ordertaker %>/scripts/{,*/}*.js', '<%= yeoman.kitchen %>/scripts/{,*/}*.js'],
 				tasks: ['jshint']
 			},
 			express: {
@@ -58,16 +60,20 @@ module.exports = function(grunt) {
 				},
 				files: [
 					'<%= yeoman.ordertaker %>/{,*/}*.html',
-					'.tmp/styles/{,*/}*.css',
+					'.tmp/<%= yeoman.ordertaker %>/styles/{,*/}*.css',
 					'{.tmp,<%= yeoman.ordertaker %>}/scripts/{,*/}*.js',
-					'<%= yeoman.ordertaker %>/images/{,*/}*.{png,jpg,jpeg,gif,webp,svg}'
+					'<%= yeoman.ordertaker %>/images/{,*/}*.{png,jpg,jpeg,gif,webp,svg}',
+					'<%= yeoman.kitchen %>/{,*/}*.html',
+					'.tmp/<%= yeoman.kitchen %>/styles/{,*/}*.css',
+					'{.tmp,<%= yeoman.kitchen %>}/scripts/{,*/}*.js',
+					'<%= yeoman.kitchen %>/images/{,*/}*.{png,jpg,jpeg,gif,webp,svg}'
 				]
 			}
 		},
 		compass: {
 			options: {
-				sassDir: '<%= yeoman.ordertaker %>/styles',
-				cssDir: '.tmp/styles',
+				sassDir: '<%= yeoman.frontend %>',
+				cssDir: '.tmp',
 				generatedImagesDir: '.tmp/images/generated',
 				imagesDir: '<%= yeoman.ordertaker %>/images',
 				javascriptsDir: '<%= yeoman.ordertaker %>/scripts',
@@ -117,7 +123,7 @@ module.exports = function(grunt) {
 							lrSnippet,
 							mountFolder(connect, '.tmp'),
 							mountFolder(connect, 'mounts'),
-							mountFolder(connect, yeomanConfig.ordertaker)
+							mountFolder(connect, yeomanConfig.frontend)
 						];
 					}
 				}

@@ -30,6 +30,12 @@ app.get("/dishes", function(req, res) {
   })
 })
 
+app.get("/orders", function(req, res) {
+  res.setHeader('Content-Type', 'text/event-stream')
+  res.write("id: 1234\nevent: orders\ndata: [{\"msg\":\"asdasdas\"}]\n\n")
+  res.end()
+})
+
 mongoose.connect(app.get("db"))
 
 mongoose.model("Dish", new mongoose.Schema(
