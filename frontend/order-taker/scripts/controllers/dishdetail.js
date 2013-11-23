@@ -1,5 +1,5 @@
 angular.module('orderTakerApp')
-	.controller('DishdetailCtrl', ['$scope', 'orderService', '$routeParams', function ($scope, orderService, $routeParams) {	
+	.controller('DishdetailCtrl', ['$scope', 'orderService', '$routeParams', '$location', function ($scope, orderService, $routeParams, $location) {	
 	'use strict';
 
 	$scope.items = {
@@ -15,8 +15,13 @@ angular.module('orderTakerApp')
 	$scope.dish = orderService.getDishdetail($routeParams.dishId);	
 	$scope.dish.portions = $scope.dish.portions.toString();
 
-	$scope.$watch('dish.portions', function(value){
-		orderService.setDishdetail($routeParams.dishId, { id: $routeParams.dishId, portions: parseInt(value,10) });
-	});
+	$scope.setPortions = function(){
+		orderService.setDishdetail($routeParams.dishId, { id: $routeParams.dishId, portions: $scope.dish.portions });
+	};
+
+	$scope.navigateBack = function(){
+		$location.path('/');
+	};
+
 
 }]);

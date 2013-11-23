@@ -44,7 +44,6 @@ services.service('orderService', function(){
 			currentDishes = {};
 		},
 		setTable: function(table){
-			console.log('setto',table);
 			currentTable = table;
 		},
 		hasOrder: function(){
@@ -57,18 +56,4 @@ services.factory('Order', ['$resource', function($resource) {
 	'use strict';
 
 	return $resource('orders/:id', {id: '@id'}); 
-}]);
-
-services.factory('hideDialog', ['$q', '$loadDialog', function($q, $loadDialog) { 
-	'use strict';
-
-	return function(promise) {
-		return promise.then(function(response) {
-			$loadDialog.hide();
-			return response;
-		}, function(response) {
-			$loadDialog.hide();
-			return $q.reject(response);
-		}); 
-	};
 }]);

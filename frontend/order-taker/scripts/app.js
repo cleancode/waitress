@@ -1,4 +1,4 @@
-angular.module('orderTakerApp', ['jqm','orderTakerApp.services','orderTakerApp.directives'])
+angular.module('orderTakerApp', ['ionic','ngRoute','orderTakerApp.services'])
 	.config(['$routeProvider', '$httpProvider', function ($routeProvider, $httpProvider) {
 		'use strict';
 
@@ -6,7 +6,6 @@ angular.module('orderTakerApp', ['jqm','orderTakerApp.services','orderTakerApp.d
 		.when('/dishes', {
 			templateUrl: 'views/dishes.html',
 			controller: 'DishesCtrl',
-			animation: 'page-slide-reverse',
 			resolve: {
 				dishes: ['DishesLoader', function(DishesLoader){
 					return DishesLoader();
@@ -15,12 +14,10 @@ angular.module('orderTakerApp', ['jqm','orderTakerApp.services','orderTakerApp.d
 		})
 		.when('/dish/:dishId',{
 			controller: 'DishdetailCtrl',
-			animation: 'page-slide',
 			templateUrl: 'views/dishdetail.html'
 		})
 		.when('/order/new',{
 			controller: 'NeworderCtrl',
-			animation: 'page-slide',
 			templateUrl: 'views/neworder.html',
 			resolve: {
 				dishes: ['DishesLoader', function(DishesLoader){
@@ -32,5 +29,4 @@ angular.module('orderTakerApp', ['jqm','orderTakerApp.services','orderTakerApp.d
 			redirectTo: '/dishes' 
 		});
 
-		$httpProvider.responseInterceptors.push('hideDialog');
 	}]);

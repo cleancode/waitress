@@ -1,22 +1,36 @@
-<div jqm-page>
-    <div jqm-header>
-        <a jqm-button iconpos="left" inline="true" icon="ui-icon-arrow-l" href="#/dishes" class="ui-btn-left" jqm-theme="a">Back</a>
-        <h1>Conferma</h1>
+<header class="bar bar-header bar-dark">
+    <button class="button  button-clear">
+        <i class="icon ion-arrow-left-c" ng-click="navigateBack()"></i>
+    </button>
+    <h1 class="title">Conferma</h1>
+</header>
+<content has-header="true">
+    <div class="card">
+        <div class="item item-divider">
+            Riassunto ordine:
+        </div>
+        <div href="#" class="item" ng-repeat="dish in order.dishes">
+            {{dish.name}}, {{dish.portions}} porzioni
+        </div>
+
     </div>
 
-    <h4>Riassunto ordine:</h4>
-    <ul>
-    	<li ng-repeat="dish in order.dishes">
-    		{{dish.name}}, {{dish.portions}} porzioni
-    	</li>
-    </ul>
+    <div class="card">
+        <div class="item item-divider">
+            Informazioni aggiuntive:
+        </div>
+        <label class="item item-input">
+            <input type="number" placeholder="Numero Tavolo" ng-model="order.table">
+        </label>      
+    </div>    
 
-    <h4>Informazioni aggiuntive:</h4>
-	<div jqm-fieldcontain>
-        <label class="ui-select">Tavolo:</label>
-        <div jqm-textinput ng-model="order.table"></div>
-    </div>
+    <div class="card" ng-if="order.table">
+        <div class="item tabs tabs-secondary tabs-icon-left">
+            <a class="tab-item" ng-click="saveOrder()">
+                <i class="icon ion-archive"></i>
+                Invia l'ordinazione
+            </a>
+        </div>
+    </div> 
 
-    <div jqm-button="submit" ng-if="order.table" ng-click="saveOrder()" jqm-theme="b" icon="ui-icon-check" iconpos="left" >Invia la comanda</div>
-
-</div>
+</content>

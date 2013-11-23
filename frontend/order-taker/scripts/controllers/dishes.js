@@ -30,4 +30,9 @@ angular.module('orderTakerApp')
 		$location.path('/order/new');
 	};
 
+	$scope.openMenu = function(){
+		$scope.sideMenuController.right = false;
+		$scope.sideMenuController.toggleLeft();
+	};
+
 }]);

@@ -1,17 +1,28 @@
-<div jqm-page>
-    <div jqm-header><h1>Componi</h1></div>
+<header class="bar bar-header bar-dark">
+    <button class="button  button-clear">
+        <i class="icon ion-navicon" ng-click="openMenu()"></i>
+    </button>
+    <h1 class="title">Ordine Corrente</h1>
+    <button class="button  button-clear">
+        <i class="icon ion-ios7-upload-outline" ng-if="checkorder" ng-click="neworder()"></i>
+    </button>
+</header>
+<content has-header="true">
 
-    <div jqm-listview inset="true">
-    	<div ng-repeat="dish in dishes | orderBy:'category'">
-        	<div ng-if="!dish.iscategory" jqm-li-link ng-click="details(dish)">
-            	{{dish.name}} <small>({{ getPortions(dish.id) }} porzioni)</small>
-        	</div>
-        	<div ng-if="dish.iscategory" jqm-li-divider >
-            	{{dish.category}}
-        	</div>        	
-        </div>
+    <div class="list">
+      <div  ng-repeat-start="dish in dishes | orderBy:'category'" 
+            class="item item-divider"
+            ng-if="dish.iscategory"
+            >
+            {{dish.category}}
+      </div>
+      <a    ng-repeat-end 
+            ng-if="!dish.iscategory" 
+            ng-click="details(dish)"
+            class="item">
+            {{dish.name}} 
+            <span class="item-note">({{ getPortions(dish.id) }} porzioni)</span>
+      </a>
     </div>
 
-    <a jqm-button ng-if="checkorder" ng-click="neworder()" jqm-theme="b" icon="ui-icon-arrow-r" iconpos="right" >Rivedi la comanda</a>
-
-</div>
+</content>
