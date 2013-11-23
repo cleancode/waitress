@@ -51,7 +51,7 @@ module.exports = function(grunt) {
 				}
 			},
 			mocha: {
-				files:  [ '../api/**/*.js'],
+				files:  [ '../api/test/**/*.js'],
 				tasks:  [ 'mochaTest'],
 			},						
 			livereload: {
