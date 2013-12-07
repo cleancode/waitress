@@ -3,11 +3,11 @@ An educational application done with NodeJS and AngularJS
 
 ## Layout
 * **/api** server side
-* **/kitchen** front-end used in the kitchen
-* **/order-taker** front-end used on mobile devices by waiters
-
-### order-taker
-Order Taker handles the tasks of taking orders and being notified when orders are ready.
+* **/frontend** client side
+  * **/kitchen** front-end used in the kitchen
+  * **/order-taker** front-end used on mobile devices by waiters
+  * **/test** front-end tests
+* **/tools** project automation stuffs
 
 ## Install
 * install NodeJS >= 0.10.13, I suggest to do that using nvm
