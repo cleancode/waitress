@@ -150,7 +150,7 @@ module.exports = function(grunt) {
 		},
 		open: {
 			server: {
-				url: 'http://localhost:<%= connect.options.port %>'
+				url: 'http://localhost:<%= connect.options.port %>/order-taker'
 			}
 		},
 		ngtemplates: {
