@@ -29,3 +29,9 @@
 * use common middlewares in express
 * use cors middleware in express
 * add local vimrc
+
+
+# US-02
+
+## OFFLINE
+* extract Dish model in models/dish.js

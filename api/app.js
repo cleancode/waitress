@@ -1,8 +1,9 @@
 var express = require("express"),
-    mongoose = require("mongoose")
+    mongoose = require("mongoose"),
+    app = module.exports = express(),
     util = require("util")
 
-var app = express()
+var Dish = require("./models/dish")
 
 app.configure(function() {
   app.set("port", process.env.PORT || 3000)
@@ -18,6 +19,8 @@ app.use(express.favicon())
 app.use(express.logger("dev"))
 app.use(require("cors")())
 
+mongoose.connect(app.get("db"))
+
 app.get("/hello", function(req, res) {
   res.end(
     util.format("Hello %s", req.query.who || "World")
@@ -25,7 +28,7 @@ app.get("/hello", function(req, res) {
 })
 
 app.get("/dishes", function(req, res) {
-  mongoose.model("Dish").find().exec(function(err, docs) {
+  Dish.find().exec(function(err, docs) {
     res.json(docs)
   })
 })
@@ -35,17 +38,6 @@ app.get("/orders", function(req, res) {
   res.write("id: 1234\nevent: orders\ndata: [{\"msg\":\"asdasdas\"}]\n\n")
   res.end()
 })
-
-mongoose.connect(app.get("db"))
-
-mongoose.model("Dish", new mongoose.Schema(
-  {name: String, category: String},
-  {toJSON: {transform: function(doc, ret) {
-    ret.id = ret._id
-    delete ret._id
-    delete ret.__v
-  }}}
-))
 
 if (require.main === module) {
   mongoose.connection.on("connected", function() {
@@ -57,4 +49,3 @@ if (require.main === module) {
   })
 }
 
-module.exports = app
