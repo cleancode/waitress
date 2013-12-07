@@ -3,3 +3,5 @@
 " plugin installed
 
 let g:ctrlp_custom_ignore = '\.git$\|\.tmp$\|node_modules$\|bower_components$'
+
+nnoremap <Leader>t :!mocha --recursive --reporter spec --colors test/<CR>
