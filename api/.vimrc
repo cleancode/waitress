@@ -2,4 +2,4 @@
 " https://github.com/MarcWeber/vim-addon-local-vimrc
 " plugin installed
 
-let g:ctrlp_custom_ignore = '\.git$\|\.tmp$\|\.hg$\|\.svn$\|.work$\|.keep$\|node_modules$'
+let g:ctrlp_custom_ignore = '\.git$\|\.tmp$\|node_modules$\|bower_components$'
