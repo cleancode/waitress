@@ -12,7 +12,8 @@ describe("Waitress", function() {
     it("should return json", function(done) {
       request.get(this.urlFor("/dishes"), function(err, res, body) {
         expect(res.headers["content-type"]).to.contain("application/json")
-      }, done)
+        done()
+      })
     })
 
     it("should return all the dishes", function(done) {
@@ -20,7 +21,8 @@ describe("Waitress", function() {
         var dishes = JSON.parse(body), names = _(dishes).pluck("name")
         expect(names).to.contain("risotto ai porcini")
         expect(names).to.contain("filetto di manzo ai tre pepi")
-      }, done)
+        done()
+      })
     })
 
     after(helper.stopServer)
