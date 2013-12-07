@@ -46,7 +46,7 @@ describe("Waitress", function() {
             .map(function(id) {
               return {
                 dish: id,
-                portions: _.chain(_.range(1,5)).shuffle().first().value()
+                portions: _.random(1, 5)
               }
             })
             .value(),
