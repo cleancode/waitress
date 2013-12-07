@@ -3,18 +3,24 @@ An educational application done with NodeJS and AngularJS
 
 ## Layout
 * **/api** server side
-* **/kitchen** front-end used in the kitchen
-* **/order-taker** front-end used on mobile devices by waiters
+* **/frontend** client side
+  * **/kitchen** front-end used in the kitchen
+  * **/order-taker** front-end used on mobile devices by waiters
+  * **/test** front-end tests
+* **/tools** project automation stuffs
 
-## order-taker
-Order Taker handles the tasks of taking orders and being notified when orders are ready. 
+## Install
+* install NodeJS >= 0.10.13, I suggest to do that using nvm
+* install NodeJS needed global packages with `npm install -g yo grunt-cli bower karma phantomjs`
+* set PHANTOMJS_BIN variable: ``export PHANTOMJS_BIN=`which phantomjs` ``
+* install Ruby needed global packages with `gem install compass`
+* install specific packages of components
+  * `cd tools; npm install; bower install; cd -`
+  * `cd api; npm install; cd -`
 
-### Install
-Install nodejs (< 0.10.7 or >= 0.10.13 if you want to run tests), I suggest using nvm. Then run `npm install -g yo grunt-cli bower karma phantomjs`.
-Then set PHANTOMJS_BIN variable: ``export PHANTOMJS_BIN=`which phantomjs` ``
-
+## Run
 * to run server `grunt server` and then `localhost:9000`
-* to run unit tests `karma start` 
-* to run e2e tests `karma start karma-e2e.conf.js` 
+* to run unit tests `karma start`
+* to run e2e tests `karma start karma-e2e.conf.js`
 
-Every commands from /order-taker folder.
+Every commands from /tools folder
