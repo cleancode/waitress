@@ -3,7 +3,8 @@ var express = require("express"),
     app = module.exports = express(),
     util = require("util")
 
-var Dish = require("./models/dish")
+var Dish = require("./models/dish"),
+    Order = require("./models/order")
 
 app.configure(function() {
   app.set("port", process.env.PORT || 3000)
@@ -17,6 +18,7 @@ app.configure("test", function() {
 
 app.use(express.favicon())
 app.use(express.logger("dev"))
+app.use(express.json())
 app.use(require("cors")())
 
 mongoose.connect(app.get("db"))
@@ -30,6 +32,13 @@ app.get("/hello", function(req, res) {
 app.get("/dishes", function(req, res) {
   Dish.find().exec(function(err, docs) {
     res.json(docs)
+  })
+})
+
+app.post("/orders", function(req, res) {
+  new Order(req.body).save(function(err, order) {
+    res.location(util.format("/order/%s", order.id))
+    res.json(201, order)
   })
 })
 
