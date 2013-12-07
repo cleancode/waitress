@@ -1,7 +1,7 @@
 var helper = require("./_helper"),
     app = require("./../../app"),
     expect = require("chai").expect,
-    async = require("async"),
+    request = require("request"),
     _ = require("underscore")
 
 describe("Waitress", function() {
@@ -10,13 +10,13 @@ describe("Waitress", function() {
     before(helper.startServer(app))
 
     it("should return json", function(done) {
-      this.route("/dishes", function(err, res, body) {
+      request.get(this.urlFor("/dishes"), function(err, res, body) {
         expect(res.headers["content-type"]).to.contain("application/json")
       }, done)
     })
 
     it("should return all the dishes", function(done) {
-      this.route("/dishes", function(err, res, body) {
+      request.get(this.urlFor("/dishes"), function(err, res, body) {
         var dishes = JSON.parse(body), names = _(dishes).pluck("name")
         expect(names).to.contain("risotto ai porcini")
         expect(names).to.contain("filetto di manzo ai tre pepi")
