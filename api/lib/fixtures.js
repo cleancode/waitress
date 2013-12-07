@@ -20,8 +20,11 @@ function save(db, fixtures, whenSavedAllFixtures) {
   async.each(
     _(fixtures).map(function(d, c) {return {documents: d, collection: c}}),
     function(fixture, whenSavedFixture) {
-      db.collection(fixture.collection, function(err, collection) { 
+      db.collection(fixture.collection, function(err, collection) {
         collection.remove({}, function(err, result) {
+          if (fixture.documents.length === 0) {
+            return whenSavedFixture()
+          }
           collection.insert(fixture.documents, whenSavedFixture)
         })
       })
