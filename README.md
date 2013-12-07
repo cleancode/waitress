@@ -11,9 +11,12 @@ An educational application done with NodeJS and AngularJS
 
 ## Install
 * install NodeJS >= 0.10.13, I suggest to do that using nvm
-* install NodeJS needed global packages with `npm install -g yo grunt-cli bower karma phantomjs uglify-js`
+* install NodeJS needed global packages with `npm install -g yo grunt-cli bower karma phantomjs`
 * set PHANTOMJS_BIN variable: ``export PHANTOMJS_BIN=`which phantomjs` ``
 * install Ruby needed global packages with `gem install compass`
+* install specific packages of components
+  * `cd tools; npm install; bower install; cd -`
+  * `cd api; npm install; cd -`
 
 ## Run
 * to run server `grunt server` and then `localhost:9000`
