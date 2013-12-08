@@ -37,6 +37,7 @@ var orderSchema = new Schema(
 )
 
 
+orderSchema.plugin(require("mongoose-timestamp"))
 orderSchema.virtual("ready").get(function() {
   return _(this.dishes).every(function(dish) {
     return dish.ready

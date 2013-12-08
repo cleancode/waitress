@@ -45,7 +45,6 @@ describe("Waitress", function() {
             portions: portionsToDeliver
           })
 
-
       Order.save(orderWithThreePortionsOfOneDish, function(err, order) {
         expect(order.dishes).all.have.property("ready", false)
 
