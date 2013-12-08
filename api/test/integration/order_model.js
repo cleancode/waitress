@@ -17,7 +17,7 @@ describe("Waitress", function() {
       })
     })
 
-    it("has dishes with portionsToDeliver", function(done) {
+    it("has dishes with portionsToDeliver field", function(done) {
       var portionsToDeliver = 3,
           orderWithThreePortionsOfOneDish = this.anOrderSpecification({
             portions: portionsToDeliver
@@ -29,7 +29,7 @@ describe("Waitress", function() {
       })
     })
 
-    it("has dishes with portionsReadyInTheKitchen", function(done) {
+    it("has dishes with portionsReadyInTheKitchen field", function(done) {
       var portionsToDeliver = 3,
           orderWithThreePortionsOfOneDish = this.anOrderSpecification({
             portions: portionsToDeliver
@@ -39,6 +39,37 @@ describe("Waitress", function() {
         expect(order.dishes).all.have.property("portionsReadyInTheKitchen", 0)
         done()
       })
+    })
+
+    it("has dishes with ready field", function() {
+      var portionsToDeliver = 3,
+          orderWithThreePortionsOfOneDish = this.anOrderSpecification({
+            portions: portionsToDeliver
+          }),
+          order = Order.from(orderWithThreePortionsOfOneDish)
+
+      expect(order.dishes).all.have.property("ready", false)
+
+      order.dishes.forEach(function(dish) {
+        dish.portionsReadyInTheKitchen = portionsToDeliver
+      })
+      expect(order.dishes).all.have.property("ready", true)
+    })
+
+    it("has ready field", function() {
+      var portionsToDeliver = 3,
+          orderWithThreePortionsOfOneDish = this.anOrderSpecification({
+            portions: portionsToDeliver
+          }),
+          order = Order.from(orderWithThreePortionsOfOneDish)
+
+      expect(order).to.have.property("ready", false)
+
+      order.dishes.forEach(function(dish) {
+        dish.portionsReadyInTheKitchen = portionsToDeliver
+      })
+
+      expect(order).to.have.property("ready", true)
     })
 
     before(function(done) {

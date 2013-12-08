@@ -34,4 +34,21 @@
 # US-02
 
 ## OFFLINE
-* extract Dish model in models/dish.js
+* extract `Dish` model in `models/dish.js`
+* prepare `Order` model
+  * create skeleton in `models/order.js`
+    * add createdAt field to the order
+    * add updatedAt field to the order
+  * methods in `_helper.js` to create order specifications
+  * move `helper.js` in `test` directory
+  * POST /orders implementation and acceptance tests
+  * create skeleton of integration tests
+
+## WORKSHOP
+* our customer is _picky_ the representation of an order is quite different form the given data
+* add portionsToDeliver field for each dish in order
+* add portionsReadyInTheKitchen field for each dish in order
+* add ready field for each dish in order, ready when all portions are ready in the kitchen
+* add ready field to the order, ready when all dishes are ready
+* add dish field for each dish with dish extended informations
+* dishes should be groupped by dish category
