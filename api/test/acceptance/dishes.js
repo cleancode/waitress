@@ -6,8 +6,8 @@ var helper = require("./../_helper"),
 
 describe("Waitress", function() {
   describe("GET /dishes", function() {
-    before(helper.loadFixtures(app))
     before(helper.startServer(app))
+    beforeEach(helper.loadFixtures(app))
 
     it("should return json", function(done) {
       request.get(this.urlFor("/dishes"), function(err, res, body) {

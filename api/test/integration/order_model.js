@@ -5,8 +5,8 @@ var app = require("./../../app"),
 
 describe("Waitress", function() {
   describe("Order", function() {
-    before(helper.loadFixtures(app))
-    before(helper.forOrders)
+    beforeEach(helper.loadFixtures(app))
+    beforeEach(helper.forOrders)
 
     it("can be created from specification data", function(done) {
       Order.save(this.anOrderSpecification(), function(err, order) {
@@ -72,7 +72,18 @@ describe("Waitress", function() {
       })
     })
 
-    context("as JSON", function() {
+    describe("static.updatedAfter query", function() {
+      it("returns orders updated after some timestamp", function(done) {
+        Order.save(this.anOrderSpecification(), function(err, order) {
+          Order.updatedAfter(1, function(err, updatedAfter) {
+            expect(updatedAfter).to.have.length(1)
+            done()
+          })
+        })
+      })
+    })
+
+    describe("as JSON", function() {
       it("has dishes groupped by category", function(done) {
         var fiveDishes = _(5).times(function() {return {portions: _.random(2,4)}})
         Order.save(this.anOrderSpecification(fiveDishes), function(err, order) {

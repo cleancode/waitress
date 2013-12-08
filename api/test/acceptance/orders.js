@@ -6,9 +6,9 @@ var helper = require("./../_helper"),
 
 describe("Waitress", function() {
   describe("POST /orders", function() {
-    before(helper.loadFixtures(app))
     before(helper.startServer(app))
-    before(helper.forOrders)
+    beforeEach(helper.loadFixtures(app))
+    beforeEach(helper.forOrders)
 
     it("should store an Order", function(done) {
       request.post(
