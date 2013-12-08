@@ -27,7 +27,7 @@ module.exports.stopServer = function(done) {
 }
 
 module.exports.forOrders = function(done) {
-  var self = this, 
+  var self = this,
       mongodb = require("mongodb"),
       Dish = require("./../models/dish")
 

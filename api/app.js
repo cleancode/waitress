@@ -36,7 +36,7 @@ app.get("/dishes", function(req, res) {
 })
 
 app.post("/orders", function(req, res) {
-  new Order(req.body).save(function(err, order) {
+  Order.save(req.body, function(err, order) {
     res.location(util.format("/order/%s", order.id))
     res.json(201, order)
   })
