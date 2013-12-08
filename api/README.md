@@ -50,5 +50,5 @@
 * add portionsReadyInTheKitchen field for each dish in order
 * add ready field for each dish in order, ready when all portions are ready in the kitchen
 * add ready field to the order, ready when all dishes are ready
-* add dish field for each dish with dish extended informations
-* dishes should be groupped by dish category
+* add extended informations for each dish in order (name and category)
+* dishes should be groupped by dish's category

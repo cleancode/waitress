@@ -1,4 +1,4 @@
-var helper = require("./_helper"),
+var helper = require("./../_helper"),
     app = require("./../../app"),
     expect = require("chai").expect,
     request = require("request"),
