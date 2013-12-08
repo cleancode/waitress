@@ -29,6 +29,9 @@ var orderSchema = new Schema(
     toJSON:
     { virtuals: true,
       transform: function(doc, ret) {
+        ret.dishes = _(ret.dishes).groupBy(function(dish) {
+          return dish.category
+        })
         delete ret._id
         delete ret.__v
       }

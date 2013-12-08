@@ -71,5 +71,20 @@ describe("Waitress", function() {
         expect(order).to.have.property("ready", true)
       })
     })
+
+    context("as JSON", function() {
+      it("has dishes groupped by category", function(done) {
+        var fiveDishes = _(5).times(function() {return {portions: _.random(2,4)}})
+        Order.save(this.anOrderSpecification(fiveDishes), function(err, order) {
+          var orderBackFromJSON = JSON.parse(JSON.stringify(order))
+          var dishesCategories = _(order.dishes).chain()
+            .map(function(dish) {return dish.category})
+            .unique()
+            .value()
+          expect(orderBackFromJSON.dishes).to.have.keys(dishesCategories)
+          done()
+        })
+      })
+    })
   })
 })
