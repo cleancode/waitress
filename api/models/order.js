@@ -11,9 +11,13 @@ var dishInOrderSchema = new Schema(
     portionsToDeliver: Number,
     portionsReadyInTheKitchen: {type: Number, default: 0},
   },
-  { id: false, _id: false,
-    toObject: { virtuals: true },
-    toJSON: { virtuals: true }
+  { toObject: { virtuals: true },
+    toJSON:
+      { virtuals: true,
+        transform: function(doc, ret) {
+          delete ret._id
+        }
+      }
   }
 )
 
