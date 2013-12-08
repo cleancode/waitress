@@ -1,11 +1,19 @@
 var mongoose = require("mongoose"),
-    Schema = mongoose.Schema
+    Schema = mongoose.Schema,
+    _ = require("underscore")
 
 
-module.exports = mongoose.model("Order", new Schema(
+var Order = mongoose.model("Order", new Schema(
   { table: Schema.ObjectId,
     dishes: [
-      new Schema({dish: Schema.ObjectId, portions: Number}, {_id: false})
+      new Schema(
+        { dish: Schema.ObjectId,
+          portionsToDeliver: Number,
+          portionsReadyInTheKitchen: {type: Number, default: 0},
+          portions: Number
+        },
+        { _id: false }
+      )
     ]
   },
   { toJSON: {transform: function(doc, ret) {
@@ -15,3 +23,14 @@ module.exports = mongoose.model("Order", new Schema(
     }
   }}
 ))
+
+Order.from = function(data) {
+  data.dishes = _(data.dishes).map(function(dish) {
+    dish.portionsToDeliver = dish.portions
+    return dish
+  })
+  return new Order(data)
+}
+
+
+module.exports = Order
