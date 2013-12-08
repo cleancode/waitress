@@ -66,6 +66,14 @@ orderSchema.statics.save = function(data, callAfterSave) {
   )
 }
 
+orderSchema.statics.updatedAfter = function(timestamp, callback) {
+  var query = this.where("updatedAt").gt(new Date(timestamp))
+  if (callback) {
+    return query.exec(callback)
+  }
+  return query
+}
+
 var Order = mongoose.model("Order", orderSchema)
 
 

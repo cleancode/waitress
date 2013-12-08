@@ -52,3 +52,4 @@
 * add ready field to the order, ready when all dishes are ready
 * add extended informations for each dish in order (name and category)
 * dishes should be groupped by dish's category
+* add updatedAfter(timestamp) custom query

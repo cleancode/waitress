@@ -72,18 +72,7 @@ describe("Waitress", function() {
       })
     })
 
-    describe("static.updatedAfter query", function() {
-      it("returns orders updated after some timestamp", function(done) {
-        Order.save(this.anOrderSpecification(), function(err, order) {
-          Order.updatedAfter(1, function(err, updatedAfter) {
-            expect(updatedAfter).to.have.length(1)
-            done()
-          })
-        })
-      })
-    })
-
-    describe("as JSON", function() {
+    describe(".toJSON", function() {
       it("has dishes groupped by category", function(done) {
         var fiveDishes = _(5).times(function() {return {portions: _.random(2,4)}})
         Order.save(this.anOrderSpecification(fiveDishes), function(err, order) {
@@ -96,6 +85,30 @@ describe("Waitress", function() {
           done()
         })
       })
+    })
+
+    describe("::updatedAfter query", function() {
+      it("returns orders updated after some timestamp", function(done) {
+        Order.save(this.anOrderSpecification(), function(err, order) {
+          Order.updatedAfter(1, function(err, updatedAfter) {
+            expect(updatedAfter).to.have.length(1)
+            done()
+          })
+        })
+      })
+
+      it("returns nothing when timestamp is in the future", function(done) {
+        var inTheFuture = new Date().getTime() + 100000
+        Order.save(this.anOrderSpecification(), function(err, order) {
+          Order.updatedAfter(inTheFuture, function(err, updatedAfter) {
+            expect(updatedAfter).to.have.length(0)
+            done()
+          })
+        })
+      })
+
+      // XXX: must be tested more but unfortunately mongoose-timestamp
+      // doesn't support the injection of time, a pull request is mandatory :smile:
     })
   })
 })
