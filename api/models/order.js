@@ -47,10 +47,7 @@ orderSchema.virtual("ready").get(function() {
   })
 })
 
-var Order = mongoose.model("Order", orderSchema)
-
-
-Order.save = function(data, callAfterSave) {
+orderSchema.statics.save = function(data, callAfterSave) {
   async.map(
     data.dishes,
     function(dish, done) {
@@ -68,6 +65,8 @@ Order.save = function(data, callAfterSave) {
     }
   )
 }
+
+var Order = mongoose.model("Order", orderSchema)
 
 
 module.exports = Order
