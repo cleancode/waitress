@@ -3,7 +3,7 @@ var util = require("util")
 
 module.exports = function(model) {
   return function(req, res, next) {
-    if (!req.accepts("text/event-stream")) {
+    if ((req.headers["accept"] || "").indexOf("text/event-stream") < 0) {
       return next()
     }
 

@@ -14,7 +14,7 @@ describe("connect-mongoose-sse", function() {
   context("when Request doesn't Accept text/event-stream", function() {
     beforeEach(function() {
       this.req = {
-        accepts: sinon.stub().returns(false)
+        headers: {"accept": "application/json"}
       }
       this.res = sinon.spy()
       this.next = sinon.spy()
@@ -23,7 +23,6 @@ describe("connect-mongoose-sse", function() {
     it("will call next", function() {
       ;(sse())(this.req, this.res, this.next)
 
-      expect(this.req.accepts).to.have.been.calledWith("text/event-stream")
       expect(this.next).to.have.been.calledOnce
     })
   })
@@ -31,8 +30,7 @@ describe("connect-mongoose-sse", function() {
   context("when Request Accept text/event-stream", function() {
     beforeEach(function() {
       this.req = {
-        accepts: sinon.stub().returns(true),
-        headers: {}
+        headers: {"accept": "text/event-stream"}
       }
       this.res = {
         writeHead: sinon.spy(),
