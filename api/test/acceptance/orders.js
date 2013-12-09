@@ -5,12 +5,12 @@ var helper = require("./../_helper"),
     request = require("request")
 
 describe("Waitress", function() {
-  describe("POST /orders", function() {
-    before(helper.startServer(app))
-    beforeEach(helper.loadFixtures(app))
-    beforeEach(helper.forOrders)
+  before(helper.startServer(app))
+  beforeEach(helper.loadFixtures(app))
+  beforeEach(helper.forOrders)
 
-    it("should store an Order", function(done) {
+  describe("POST /orders", function() {
+    it("stores an order", function(done) {
       request.post(
         {url: this.urlFor("/orders"), json: this.anOrderSpecification()},
         function(err, res, body) {
@@ -23,7 +23,20 @@ describe("Waitress", function() {
         }
       );
     })
-
-    after(helper.stopServer)
   })
+
+  describe("GET /orders", function() {
+    it("returns all orders", function(done) {
+      var self = this
+      Order.save(self.anOrderSpecification(), function(err, order) {
+        request.get(self.urlFor("/orders"), function(err, res, body) {
+          expect(res.headers["content-type"]).to.contain("application/json")
+          expect(JSON.stringify([order])).to.eq(body)
+          done()
+        })
+      })
+    })
+  })
+
+  after(helper.stopServer)
 })

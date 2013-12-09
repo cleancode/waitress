@@ -43,9 +43,12 @@ app.post("/orders", function(req, res) {
 })
 
 app.get("/orders", function(req, res) {
-  res.setHeader('Content-Type', 'text/event-stream')
-  res.write("id: 1234\nevent: orders\ndata: [{\"msg\":\"asdasdas\"}]\n\n")
-  res.end()
+  Order.find(function(err, orders) {
+    res.json(orders)
+  })
+  // res.setHeader('Content-Type', 'text/event-stream')
+  // res.write("id: 1234\nevent: orders\ndata: [{\"msg\":\"asdasdas\"}]\n\n")
+  // res.end()
 })
 
 if (require.main === module) {
