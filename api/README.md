@@ -52,10 +52,10 @@
 * add ready field to the order, ready when all dishes are ready
 * add extended informations for each dish in order (name and category)
 * dishes should be groupped by dish's category
-* add updatedAfter(timestamp) custom query
+* add createdBetween(timestamp, timestamp) custom query
 
 ## Connect Middleware for SSE on Mongoose Models [WORKSHOP]
-We want a connect middleware that takes an instance of a mongoose model (Model) and if the request is an event source request than it emits an event with all the documents returned by Model.updatedAfter(lastEventId)
+We want a connect middleware that takes an instance of a mongoose model (Model) and if the request is an event source request than it emits an event with all the documents returned by Model.createdBetween(previousLastEventId, nextLastEventId)
 
 ### [Specifications](http://www.w3.org/TR/2011/WD-eventsource-20110208)
 * Request
