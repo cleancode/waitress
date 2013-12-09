@@ -44,7 +44,7 @@
   * POST /orders implementation and acceptance tests
   * create skeleton of integration tests
 
-## WORKSHOP
+## Order Model [WORKSHOP]
 * our customer is _picky_ the representation of an order is quite different form the given data
 * add portionsToDeliver field for each dish in order
 * add portionsReadyInTheKitchen field for each dish in order
@@ -53,3 +53,23 @@
 * add extended informations for each dish in order (name and category)
 * dishes should be groupped by dish's category
 * add updatedAfter(timestamp) custom query
+
+## Connect Middleware for SSE on Mongoose Models [WORKSHOP]
+We want a connect middleware that takes an instance of a mongoose model (Model) and if the request is an event source request than it emits an event with all the documents returned by Model.updatedAfter(lastEventId)
+
+### [Specifications](http://www.w3.org/TR/2011/WD-eventsource-20110208)
+* Request
+  * have header `Last-Event-ID: <ID>`
+  * have header `Accept: text/event-stream`
+* Response
+  * 200 OK
+  * with header `Content-Type: text/event-stream`
+  * with header `Cache-Control: no-cache`
+  * with header `Connection: keep-alive`
+  * body will be something like
+    ```
+    id: {Next-Last-Event-ID}
+    event: orders
+    data: {List-Of-Orders-As-JSON}
+    {End-Of-Line}
+    ```
