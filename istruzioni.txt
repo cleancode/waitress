@@ -1,0 +1,15 @@
+yo angular --minsafe
+force sul jshint
+esempio con l'input type nome 
+batarang
+ripristiniamo app e controller e svuotiamo la view
+js nel livereload
+testiamo con karma
+$injector sul baseRoot, whenGET
+creaimo il service 
+modifichiamo il test su karma
+uninstall angular e angular-route
+bower install https://github.com/driftyco/ionic --save
+bower install angular-animate, angular-touch, angular-sanitize
+creiamo i list dividers
+creiamo la lista usando http://ionicframework.com/docs/components/

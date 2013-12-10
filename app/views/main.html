@@ -1,0 +1,13 @@
+<header class="bar bar-header bar-dark">
+	<h1 class="title">Dishes</h1>
+</header>
+<content has-header="true">
+	<div class="list">
+	  <div ng-repeat-start="dish in dishes | orderBy:['index','iscategory'] " ng-if="dish.iscategory" class="item item-divider">
+	    {{dish.category}}
+	  </div>
+	  <div ng-repeat-end ng-if="!dish.iscategory" class="item" href="#">
+	    {{dish.name}}
+	  </div>
+	</div>
+</content>
