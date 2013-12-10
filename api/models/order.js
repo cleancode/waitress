@@ -22,7 +22,7 @@ dishInOrderSchema.virtual('ready').get(function() {
 })
 
 var orderSchema = new Schema(
-  { table: Schema.ObjectId,
+  { table: String,
     dishes: [dishInOrderSchema]
   },
   { toObject: { virtuals: true },

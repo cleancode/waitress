@@ -12,12 +12,25 @@ angular.module('waitressNodeApp', [
         controller: 'MainCtrl',
         resolve: {
           dishes: ['DishesLoader', function(DishesLoader){
-            return DishesLoader;
+            return new DishesLoader();
+          }]
+        }
+      })
+      .when('/dish/:dishId',{
+        controller: 'DishdetailCtrl',
+        templateUrl: 'views/dishdetail.html'
+      })
+      .when('/order/new',{
+        controller: 'NeworderCtrl',
+        templateUrl: 'views/neworder.html',
+        resolve: {
+          dishes: ['DishesLoader', function(DishesLoader){
+            return new DishesLoader();
           }]
         }
       })
       .otherwise({
-        redirectTo: '/'
+        redirectTo: '/dishes'
       });
   }])
 
