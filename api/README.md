@@ -73,3 +73,15 @@ We want a connect middleware that takes an instance of a mongoose model (Model) 
     data: {List-Of-Orders-As-JSON}
     {End-Of-Line}
     ```
+
+# Useful Links
+* http://lodash.com/docs
+* https://github.com/mikeal/request
+* http://nodejs.org/api/
+* http://mongoosejs.com/docs/guide.html
+* https://github.com/LearnBoost/mongoose
+* http://www.senchalabs.org/connect/
+* https://github.com/senchalabs/connect/wiki
+* http://expressjs.com/api.html
+* http://chaijs.com/api/bdd/
+* http://sinonjs.org/docs/
