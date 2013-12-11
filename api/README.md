@@ -39,6 +39,7 @@
   * create skeleton in `models/order.js`
     * add createdAt field to the order
     * add updatedAt field to the order
+    * use mongoose-timestamp, note the default with a closure
   * methods in `_helper.js` to create order specifications
   * move `helper.js` in `test` directory
   * POST /orders implementation and acceptance tests
@@ -51,7 +52,9 @@
 * add ready field for each dish in order, ready when all portions are ready in the kitchen
 * add ready field to the order, ready when all dishes are ready
 * add extended informations for each dish in order (name and category)
+  * Order.static.save
 * dishes should be groupped by dish's category
+  * Order.set("toJSON", {transform: ...})
 * add createdBetween(timestamp, timestamp) custom query
 
 ## Connect Middleware for SSE on Mongoose Models [WORKSHOP]
