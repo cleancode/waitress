@@ -8,7 +8,7 @@ angular.module('waitressNodeApp', [
   .config(['$routeProvider', function ($routeProvider) {
     $routeProvider
       .when('/', {
-        templateUrl: 'views/main.html',
+        templateUrl: 'ot-views/main.html',
         controller: 'MainCtrl',
         resolve: {
           dishes: ['DishesLoader', function(DishesLoader){
@@ -18,11 +18,11 @@ angular.module('waitressNodeApp', [
       })
       .when('/dish/:dishId',{
         controller: 'DishdetailCtrl',
-        templateUrl: 'views/dishdetail.html'
+        templateUrl: 'ot-views/dishdetail.html'
       })
       .when('/order/new',{
         controller: 'NeworderCtrl',
-        templateUrl: 'views/neworder.html',
+        templateUrl: 'ot-views/neworder.html',
         resolve: {
           dishes: ['DishesLoader', function(DishesLoader){
             return new DishesLoader();
