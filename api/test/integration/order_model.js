@@ -87,20 +87,21 @@ describe("Waitress", function() {
       })
     })
 
-    describe("::updatedAfter query", function() {
-      it("returns orders updated after some timestamp", function(done) {
+    describe("::createdBetween query", function() {
+      it("returns orders created between some timestamps", function(done) {
+        var now = new Date().getTime()
         Order.save(this.anOrderSpecification(), function(err, order) {
-          Order.updatedAfter(1, function(err, updatedAfter) {
-            expect(updatedAfter).to.have.length(1)
+          Order.createdBetween(1, now, function(err, orders) {
+            expect(orders).to.be.length(1)
             done()
           })
         })
       })
 
-      it("returns nothing when timestamp is in the future", function(done) {
+      it("returns nothing when first timestamps are in the future", function(done) {
         var inTheFuture = new Date().getTime() + 100000
         Order.save(this.anOrderSpecification(), function(err, order) {
-          Order.updatedAfter(inTheFuture, function(err, updatedAfter) {
+          Order.createdBetween(inTheFuture, inTheFuture, function(err, updatedAfter) {
             expect(updatedAfter).to.have.length(0)
             done()
           })

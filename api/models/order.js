@@ -11,9 +11,13 @@ var dishInOrderSchema = new Schema(
     portionsToDeliver: Number,
     portionsReadyInTheKitchen: {type: Number, default: 0},
   },
-  { id: false, _id: false,
-    toObject: { virtuals: true },
-    toJSON: { virtuals: true }
+  { toObject: { virtuals: true },
+    toJSON:
+      { virtuals: true,
+        transform: function(doc, ret) {
+          delete ret._id
+        }
+      }
   }
 )
 
@@ -40,7 +44,7 @@ var orderSchema = new Schema(
 )
 
 
-orderSchema.plugin(require("mongoose-timestamp"))
+orderSchema.plugin(require("./../lib/mongoose-timestamp"))
 orderSchema.virtual("ready").get(function() {
   return _(this.dishes).every(function(dish) {
     return dish.ready
@@ -66,8 +70,11 @@ orderSchema.statics.save = function(data, callAfterSave) {
   )
 }
 
-orderSchema.statics.updatedAfter = function(timestamp, callback) {
-  var query = this.where("updatedAt").gt(new Date(timestamp))
+orderSchema.statics.createdBetween = function(fromTimestamp, toTimestamp, callback) {
+  var query = this.where("createdAt")
+    .gt(new Date(fromTimestamp))
+    .lte(new Date(toTimestamp))
+
   if (callback) {
     return query.exec(callback)
   }
