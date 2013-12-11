@@ -65,11 +65,11 @@ describe("connect-mongoose-sse", function() {
 
     context("and have Last-Event-ID header", function() {
       it("will call createdBetween on Model with Last-Event-ID value", function() {
-        this.req.headers["last-event-id"] = "some-id"
+        this.req.headers["last-event-id"] = "1"
 
         ;(sse(this.model))(this.req, this.res, this.next)
 
-        expect(this.model.createdBetween).to.have.been.calledWith("some-id")
+        expect(this.model.createdBetween).to.have.been.calledWith(1)
       })
     })
 

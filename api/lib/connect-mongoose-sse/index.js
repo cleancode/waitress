@@ -7,7 +7,7 @@ module.exports = function(model) {
       return next()
     }
 
-    var startAt = req.headers["last-event-id"] || 0,
+    var startAt = parseInt(req.headers["last-event-id"] || "0"),
         endAt = (new Date()).getTime()
 
     model.createdBetween(startAt, endAt, function(err, docs) {
