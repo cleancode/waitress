@@ -2,13 +2,14 @@ process.env.NODE_ENV = "test"
 
 var http = require("http"),
     request = require("request"),
+    path = require("path"),
     _ = require("underscore")
 
 
 module.exports.loadFixtures = function(app) {
   return function(done) {
     require("mongodb").MongoClient.connect(app.get("db"), function(err, db) {
-      require("./../lib/fixtures").load(db, done)
+      require("./../lib/fixtures").load(db, done, path.join(__dirname, "..", "fixtures"))
     })
   }
 }
