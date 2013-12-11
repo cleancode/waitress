@@ -91,7 +91,8 @@ describe("Waitress", function() {
       it("returns orders created between some timestamps", function(done) {
         var now = new Date().getTime()
         Order.save(this.anOrderSpecification(), function(err, order) {
-          Order.createdBetween(1, now, function(err, orders) {
+          var util = require("util")
+          Order.createdBetween(1, order.createdAt, function(err, orders) {
             expect(orders).to.be.length(1)
             done()
           })
