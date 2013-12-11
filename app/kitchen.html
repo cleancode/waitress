@@ -5,7 +5,9 @@
 	</head>
 	<body ng-app="kitchenApp">
 		<div ng-controller="ordersCtrl" sse-events>
-			{{orders}}
+			<span ng-repeat="order in orders">
+				{{order.dishes}}
+			</span>
 		</div>
 
 	    <!-- build:js kt-scripts/modules.js -->

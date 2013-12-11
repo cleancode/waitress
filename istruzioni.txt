@@ -21,3 +21,7 @@ npm install --save-dev grunt-mocha-test
 
 == consumiamo gli ordini ==
 rinominiamo index in order-taker script in ot-script e views in ot-views
+creiamo kitchen, kt-script app.js
+aggiorniamo il gruntfile
+
+== dist ==

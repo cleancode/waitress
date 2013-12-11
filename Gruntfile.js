@@ -36,11 +36,11 @@ module.exports = function (grunt) {
         tasks: ['newer:jshint:test', 'karma']
       },
       mocha: {
-        files:  [ 'api/**/*.js'],
+        files:  [ 'api/*.js','api/{fixtures,models,lib,test}/**/*.js'],
         tasks:  [ 'mochaTest'],
       },
       express: {
-        files:  [ 'api/app.js', 'api/**/*.js'],
+        files:  [ 'api/app.js', 'api/{fixtures,models,lib,test}/**/*.js'],
         tasks:  [ 'express' ],
         options: {
           nospawn: true,
