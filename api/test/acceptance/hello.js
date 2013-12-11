@@ -3,10 +3,10 @@ var helper = require("./../_helper"),
     request = require("request"),
     expect = require("chai").expect
 
-describe("Waitress", function() {
-  describe("GET /hello", function() {
-    before(helper.startServer(app))
+describe("/hello HTTP resource", function() {
+  before(helper.startServer(app))
 
+  describe("GET /hello", function() {
     it("should reply with 200 OK status", function(done) {
       request.get(this.urlFor("/hello"), function(err, res, body) {
         expect(res.statusCode).to.equal(200)
@@ -29,7 +29,6 @@ describe("Waitress", function() {
         })
       })
     })
-
-    after(helper.stopServer)
   })
+  after(helper.stopServer)
 })

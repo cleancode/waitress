@@ -4,7 +4,7 @@ var helper = require("./../_helper"),
     request = require("request"),
     _ = require("underscore")
 
-describe("Waitress", function() {
+describe("/dishes HTTP resource", function() {
   describe("GET /dishes", function() {
     before(helper.startServer(app))
     beforeEach(helper.loadFixtures(app))
