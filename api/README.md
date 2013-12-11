@@ -74,7 +74,8 @@ We want a connect middleware that takes an instance of a mongoose model (Model) 
     {End-Of-Line}
     ```
 
-# Useful Links
+
+# LINKS
 * http://lodash.com/docs
 * https://github.com/mikeal/request
 * http://nodejs.org/api/
@@ -85,3 +86,91 @@ We want a connect middleware that takes an instance of a mongoose model (Model) 
 * http://expressjs.com/api.html
 * http://chaijs.com/api/bdd/
 * http://sinonjs.org/docs/
+
+
+# SAMPLES
+## Request to Create an Order
+```
+POST /orders
+Accept: application/json
+Content-Type: application/json
+
+{"dishes":[{"id":"52a5a7eccf6812e0570000a0","portions":"2"}],"table":"52a5a7eccf6812e057000fff"}
+```
+
+## An Order stored on MongoDB
+{
+  "table" : "52a83bbde6cce9cd610000af",
+  "createdAt" : ISODate("2013-12-11T10:17:33.609Z"),
+  "updatedAt" : ISODate("2013-12-11T10:17:33.610Z"),
+  "dishes" : [
+    {
+      "portionsToDeliver" : 2,
+      "name" : "abbacchio tartufato",
+      "category" : "secondi",
+      "portionsReadyInTheKitchen" : 0
+      "_id" : ObjectId("52a83bbde6cce9cd610000b3"),
+    },
+    {
+      "portionsToDeliver" : 1,
+      "name" : "vino bianco della casa",
+      "category" : "bevande",
+      "portionsReadyInTheKitchen" : 0
+      "_id" : ObjectId("52a83bbde6cce9cd610000b2"),
+    },
+    {
+      "portionsToDeliver" : 5,
+      "name" : "vino rosso della casa",
+      "category" : "bevande",
+      "portionsReadyInTheKitchen" : 0
+      "_id" : ObjectId("52a83bbde6cce9cd610000b1"),
+    }
+  ],
+  "_id" : ObjectId("52a83bbde6cce9cd610000b0"),
+  "__v" : 0
+}
+
+## An Order returned by GET /orders
+{
+  table: '52a49f75ad3213b16200007f',
+  createdAt: '2013-12-08T16:33:57.000Z',
+  updatedAt: '2013-12-08T16:33:57.000Z',
+  dishes:
+  { primi:
+     [ { portionsToDeliver: 3,
+         name: 'ravioli di patate e bufala ai porcini',
+         category: 'primi',
+         portionsReadyInTheKitchen: 0,
+         ready: false,
+         id: '52a49f75ad3213b162000085' },
+       { portionsToDeliver: 4,
+         name: 'tortelloni verdi al radicchio e provola affumicata',
+         category: 'primi',
+         portionsReadyInTheKitchen: 0,
+         ready: false,
+         id: '52a49f75ad3213b162000084' },
+       { portionsToDeliver: 2,
+         name: 'risotto ai porcini',
+         category: 'primi',
+         portionsReadyInTheKitchen: 0,
+         ready: false,
+         id: '52a49f75ad3213b162000082' } ],
+    secondi:
+     [ { portionsToDeliver: 3,
+         name: 'filetto di maiale alle mele',
+         category: 'secondi',
+         portionsReadyInTheKitchen: 0,
+         ready: false,
+         id: '52a49f75ad3213b162000083' } ],
+    antipasti:
+     [ { portionsToDeliver: 4,
+         name: 'bruschette al tonno e pepe verde',
+         category: 'antipasti',
+         portionsReadyInTheKitchen: 0,
+         ready: false,
+         id: '52a49f75ad3213b162000081' } ]
+  },
+  ready: false,
+  id: '52a49f75ad3213b162000080'
+}
+
