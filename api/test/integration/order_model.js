@@ -1,7 +1,8 @@
 var app = require("./../../app"),
     helper = require("./../_helper"),
     expect = require("chai").use(require("chai-things")).expect,
-    Order = require("./../../models/order")
+    Order = require("./../../models/order"),
+    _ = require("lodash")
 
 describe("Order", function() {
   beforeEach(helper.loadFixtures(app))
@@ -88,7 +89,6 @@ describe("Order", function() {
 
   describe("::createdBetween query", function() {
     it("returns orders created between some timestamps", function(done) {
-      var now = new Date().getTime()
       Order.save(this.anOrderSpecification(), function(err, order) {
         var util = require("util")
         Order.createdBetween(1, order.createdAt, function(err, orders) {
@@ -99,9 +99,9 @@ describe("Order", function() {
     })
 
     it("returns nothing when first timestamps are in the future", function(done) {
-      var inTheFuture = new Date().getTime() + 100000
+      var inTheFuture = _.now() + 100000
       Order.save(this.anOrderSpecification(), function(err, order) {
-        Order.createdBetween(inTheFuture, inTheFuture, function(err, updatedAfter) {
+        Order.createdBetween(inTheFuture, inTheFuture + 10, function(err, updatedAfter) {
           expect(updatedAfter).to.have.length(0)
           done()
         })
