@@ -2,7 +2,7 @@ var helper = require("./../_helper"),
     app = require("./../../app"),
     expect = require("chai").expect,
     request = require("request"),
-    _ = require("underscore")
+    _ = require("lodash")
 
 describe("/dishes HTTP resource", function() {
   describe("GET /dishes", function() {
@@ -18,7 +18,7 @@ describe("/dishes HTTP resource", function() {
 
     it("should return all the dishes", function(done) {
       request.get(this.urlFor("/dishes"), function(err, res, body) {
-        var dishes = JSON.parse(body), names = _(dishes).pluck("name")
+        var dishes = JSON.parse(body), names = _.pluck(dishes, "name")
         expect(names).to.contain("risotto ai porcini")
         expect(names).to.contain("filetto di manzo ai tre pepi")
         done()

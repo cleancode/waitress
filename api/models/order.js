@@ -2,7 +2,7 @@ var mongoose = require("mongoose"),
     Schema = mongoose.Schema,
     Dish = require("./dish"),
     async = require("async")
-    _ = require("underscore")
+    _ = require("lodash")
 
 
 var DishInOrder = (function(DishInOrder) {
@@ -44,7 +44,7 @@ var Order = (function(Order) {
   Order.set("toJSON", {
     virtuals: true,
     transform: function(doc, ret) {
-      ret.dishes = _(ret.dishes).groupBy(function(dish) {
+      ret.dishes = _.groupBy(ret.dishes, function(dish) {
         return dish.category
       })
       delete ret._id

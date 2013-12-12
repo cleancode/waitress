@@ -1,13 +1,13 @@
 var fs = require("fs"),
   path = require("path"),
   async = require("async"),
-  _ = require("underscore")
+  _ = require("lodash")
 
 
 module.exports.load = function(db, callback, fixture_path) {
   var fixtures = {}
   fs.readdir(fixture_path || "./fixtures", function(err, files) {
-    _(files).each(function(file) {
+    _.forEach(files, function(file) {
       if (path.extname(file) === ".json") {
         fixtures[path.basename(file, ".json")] = JSON.parse(fs.readFileSync(path.join(fixture_path || "./fixtures", file)))
       }
@@ -18,7 +18,7 @@ module.exports.load = function(db, callback, fixture_path) {
 
 function save(db, fixtures, whenSavedAllFixtures) {
   async.each(
-    _(fixtures).map(function(d, c) {return {documents: d, collection: c}}),
+    _.map(fixtures, function(d, c) {return {documents: d, collection: c}}),
     function(fixture, whenSavedFixture) {
       db.collection(fixture.collection, function(err, collection) {
         collection.remove({}, function(err, result) {

@@ -3,7 +3,7 @@ process.env.NODE_ENV = "test"
 var http = require("http"),
     request = require("request"),
     path = require("path"),
-    _ = require("underscore")
+    _ = require("lodash")
 
 
 module.exports.loadFixtures = function(app) {
@@ -33,9 +33,9 @@ module.exports.forOrders = function(done) {
       Dish = require("./../models/dish")
 
   Dish.find().exec(function(err, docs) {
-    self.allDishIds = _(docs).chain().pluck("_id").shuffle().value()
+    self.allDishIds = _(docs).pluck("_id").shuffle().value()
     self.anOrderSpecification = function() {
-      var dishes = _(arguments).flatten()
+      var dishes = _.flatten(arguments)
       if (dishes.length === 0) {
         dishes = _(self.allDishIds).sample(3).map(function(id) {
           return {
