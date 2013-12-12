@@ -3,7 +3,7 @@ var helper = require("./../_helper"),
     request = require("request"),
     expect = require("chai").expect
 
-describe("/hello HTTP resource", function() {
+describe("HTTP /hello resource", function() {
   before(helper.startServer(app))
 
   describe("GET /hello", function() {

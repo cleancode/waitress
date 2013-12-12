@@ -72,22 +72,7 @@ describe("Order", function() {
     })
   })
 
-  describe(".toJSON", function() {
-    it("has dishes groupped by category", function(done) {
-      var fiveDishes = _(5).times(function() {return {portions: _.random(2,4)}})
-      Order.save(this.anOrderSpecification(fiveDishes), function(err, order) {
-        var orderBackFromJSON = JSON.parse(JSON.stringify(order))
-        var dishesCategories = _(order.dishes).chain()
-          .map(function(dish) {return dish.category})
-          .unique()
-          .value()
-        expect(orderBackFromJSON.dishes).to.have.keys(dishesCategories)
-        done()
-      })
-    })
-  })
-
-  describe("::createdBetween query", function() {
+  describe("#createdBetween query", function() {
     it("returns orders created between some timestamps", function(done) {
       Order.save(this.anOrderSpecification(), function(err, order) {
         var util = require("util")
@@ -110,5 +95,20 @@ describe("Order", function() {
 
     // XXX: must be tested more but unfortunately mongoose-timestamp
     // doesn't support the injection of time, a pull request is mandatory :smile:
+  })
+
+  describe("rendered as JSON", function() {
+    it("has dishes groupped by category", function(done) {
+      var fiveDishes = _(5).times(function() {return {portions: _.random(2,4)}})
+      Order.save(this.anOrderSpecification(fiveDishes), function(err, order) {
+        var orderBackFromJSON = JSON.parse(JSON.stringify(order))
+        var dishesCategories = _(order.dishes).chain()
+          .map(function(dish) {return dish.category})
+          .unique()
+          .value()
+        expect(orderBackFromJSON.dishes).to.have.keys(dishesCategories)
+        done()
+      })
+    })
   })
 })

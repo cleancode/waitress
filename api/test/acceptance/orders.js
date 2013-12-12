@@ -4,7 +4,7 @@ var helper = require("./../_helper"),
     expect = require("chai").expect,
     request = require("request")
 
-describe("/orders HTTP resource", function() {
+describe("HTTP /orders resource", function() {
   before(helper.startServer(app))
   beforeEach(helper.loadFixtures(app))
   beforeEach(helper.forOrders)

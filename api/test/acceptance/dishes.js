@@ -4,7 +4,7 @@ var helper = require("./../_helper"),
     request = require("request"),
     _ = require("lodash")
 
-describe("/dishes HTTP resource", function() {
+describe("HTTP /dishes resource", function() {
   describe("GET /dishes", function() {
     before(helper.startServer(app))
     beforeEach(helper.loadFixtures(app))
