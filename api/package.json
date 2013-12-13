@@ -21,6 +21,8 @@
     "chai": "~1.8.1",
     "mocha": "~1.14.0",
     "request": "~2.27.0",
-    "chai-things": "~0.2.0"
+    "chai-things": "~0.2.0",
+    "sinon": "~1.7.3",
+    "sinon-chai": "~2.4.0"
   }
 }
