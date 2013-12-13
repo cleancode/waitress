@@ -54,7 +54,7 @@
 * checkout branch `sse` and review the code
 
 ## 17:00-17:30 [1P] [KITCHEN]
-* checkout branch `sse`
+* checkout branch `work-on-kitchen` and review the code
 * ... work
 * checkout branch `kitchen` and review the code
 
