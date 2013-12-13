@@ -10,7 +10,7 @@ describe('HTTP /orders resource', function() {
   beforeEach(helper.forOrders)
 
   describe('POST /orders', function() {
-    xit('stores an order', function(done) {
+    it('stores an order', function(done) {
       request.post(
         {url: this.urlFor('/orders'), json: this.anOrderSpecification()},
         function(err, res, body) {
@@ -26,7 +26,7 @@ describe('HTTP /orders resource', function() {
   })
 
   describe('GET /orders', function() {
-    xit('returns all orders', function(done) {
+    it('returns all orders', function(done) {
       var self = this
       Order.save(self.anOrderSpecification(), function(err, order) {
         request.get(self.urlFor('/orders'), function(err, res, body) {
