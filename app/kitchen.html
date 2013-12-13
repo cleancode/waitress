@@ -4,6 +4,12 @@
 		<title>Kitchen</title>
 	</head>
 	<body ng-app="kitchenApp">
+		<div ng-controller="ordersCtrl" sse-events>
+			<span ng-repeat="order in orders">
+				{{order.dishes}}
+			</span>
+		</div>
+
 	    <!-- build:js kt-scripts/modules.js -->
 	    <script src="bower_components/angular/angular.js"></script>
 	    <!-- endbuild -->	
