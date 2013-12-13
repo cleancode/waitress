@@ -1,14 +1,21 @@
 var express = require('express'),
     app = module.exports = express(),
+    mongoose = require('mongoose'),
     util = require('util')
 
 app.configure(function() {
   app.set('port', process.env.PORT || 3000)
+  app.set('db', process.env.MONGODB_URL || 'mongodb://localhost/waitress')
 })
 
 app.configure('test', function() {
   app.set('port', 9191)
+  app.set('db', 'mongodb://localhost/waitress-test')
 })
+
+app.use(express.logger('dev'))
+
+mongoose.connect(app.get('db'))
 
 app.get('/hello', function(req, res) {
   res.end(
@@ -17,7 +24,11 @@ app.get('/hello', function(req, res) {
 })
 
 if (require.main === module) {
-  require('http').createServer(app).listen(app.get('port'), function() {
-    console.log('Waitress server is running on port %d', app.get('port'))
+  mongoose.connection.on('connected', function() {
+    require('./lib/fixtures').load(mongoose.connection.db, function() {
+      require('http').createServer(app).listen(app.get('port'), function() {
+        console.log('Waitress server is running on port %d', app.get('port'))
+      })
+    })
   })
 }
