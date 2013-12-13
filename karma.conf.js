@@ -18,6 +18,7 @@ module.exports = function(config) {
       'app/bower_components/angular-animate/angular-animate.js',
       'app/bower_components/angular-touch/angular-touch.js',
       'app/bower_components/angular-sanitize/angular-sanitize.js',
+      'app/bower_components/angular-resource/angular-resource.js',
       'app/bower_components/ionic/dist/js/ionic-angular.js',
       'app/bower_components/angular-mocks/angular-mocks.js',
       'app/scripts/*.js',
