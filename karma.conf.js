@@ -1,6 +1,5 @@
 // Karma configuration
 // http://karma-runner.github.io/0.10/config/configuration-file.html
-'use strict';
 
 module.exports = function(config) {
   config.set({
@@ -21,8 +20,8 @@ module.exports = function(config) {
       'app/bower_components/angular-resource/angular-resource.js',
       'app/bower_components/ionic/dist/js/ionic-angular.js',
       'app/bower_components/angular-mocks/angular-mocks.js',
-      'app/scripts/*.js',
-      'app/scripts/**/*.js',
+      'app/ot-scripts/**/*.js',
+      'app/ot-scripts/**/*.js',
       'test/spec/**/*.js'
     ],
 
