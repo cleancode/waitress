@@ -2,10 +2,14 @@
 
 ## 09:00-09:30 [1P] [INTRODUCTION]
 * introduction: what we are gonna do today?
-* presentations: who are you?
+* presentations:
+  * who are you?
+  * what's your experience with NodeJS
+  * what do you expect from today?
 
 ## 09:30-10:30 [2P] [WALKING-SKELETON]
 * checkout branch `blank`
+* GET /hello
 * ... work
 * checkout branch `walking-skeleton` and review the code
 
