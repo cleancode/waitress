@@ -1,6 +1,7 @@
 {
   "globals": {
     "it": false,
+    "xit": false,
     "console": false,
     "process": false,
     "describe": false,
