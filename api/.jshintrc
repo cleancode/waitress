@@ -4,6 +4,7 @@
     "console": false,
     "process": false,
     "describe": false,
+    "context": false,
     "expect": true,
     "beforeEach": false,
     "afterEach": false,
@@ -16,7 +17,7 @@
   "asi": true,
   "strict": false,
   "eqeqeq": true,
-  "latedef": true,
+  "latedef": false,
   "immed": true,
   "undef": true,
   "unused": false,
@@ -25,6 +26,6 @@
   "camelcase": true,
   "quotmark": "single",
   "curly": true,
-  "indent": 2,
+  "expr": true,
   "sub": true
 }
