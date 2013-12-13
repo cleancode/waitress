@@ -35,6 +35,18 @@ module.exports = function (grunt) {
         files: ['test/spec/{,*/}*.js'],
         tasks: ['newer:jshint:test', 'karma']
       },
+      mocha: {
+        files:  [ 'api/*.js','api/{fixtures,models,lib,test}/**/*.js'],
+        tasks:  [ 'mochaTest'],
+      },
+      express: {
+        files:  [ 'api/app.js', 'api/{fixtures,models,lib,test}/**/*.js'],
+        tasks:  [ 'express' ],
+        options: {
+          nospawn: true,
+          livereload: true
+        }
+      },
       styles: {
         files: ['<%= yeoman.app %>/styles/{,*/}*.css'],
         tasks: ['newer:copy:styles', 'autoprefixer']
@@ -52,6 +64,23 @@ module.exports = function (grunt) {
           '<%= yeoman.app %>/images/{,*/}*.{png,jpg,jpeg,gif,webp,svg}',
           '{.tmp,<%= yeoman.app %>}/scripts/{,*/}*.js'
         ]
+      }
+    },
+
+    express: {
+      livereload:{
+        options: {
+          script: 'api/app.js'
+        }
+      }
+    },
+
+    mochaTest: {
+      test: {
+        options: {
+          reporter: 'spec'
+        },
+        src: ['api/test/**/*.js']
       }
     },
 
@@ -137,10 +166,6 @@ module.exports = function (grunt) {
         }]
       }
     },
-
-    
-
-    
 
     // Renames files for browser caching purposes
     rev: {
@@ -328,6 +353,7 @@ module.exports = function (grunt) {
 
     grunt.task.run([
       'clean:server',
+      'express',
       'concurrent:server',
       'autoprefixer',
       'connect:livereload',
