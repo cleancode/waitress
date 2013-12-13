@@ -1,6 +1,7 @@
 var express = require('express'),
     app = module.exports = express(),
     mongoose = require('mongoose'),
+    sse = require('./lib/connect-mongoose-sse'),
     util = require('util')
 
 var Dish = require('./models/dish'),
@@ -36,7 +37,7 @@ app.get('/dishes', function(req, res) {
   })
 })
 
-app.post('/orders', function(req, res) {
+app.post('/orders', sse(Order), function(req, res) {
   Order.save(req.body, function(err, order) {
     res.location(util.format('/order/%s', order.id))
     res.json(201, order)
