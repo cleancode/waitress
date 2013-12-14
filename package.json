@@ -1,6 +1,7 @@
 {
   "name": "waitressnode",
   "version": "0.0.0",
+  "repository": "https://github.com/cleancode/waitress.git",
   "dependencies": {},
   "devDependencies": {
     "grunt": "~0.4.1",
