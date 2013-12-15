@@ -2,12 +2,24 @@
 <html>
 	<head>
 		<title>Kitchen</title>
+		<link rel="stylesheet" href="bower_components/ionic/dist/css/ionic.css">
 	</head>
 	<body ng-app="kitchenApp">
-		<div ng-controller="ordersCtrl" sse-events>
-			<span ng-repeat="order in orders">
-				{{order.dishes}}
-			</span>
+		<div class="list" ng-controller="ordersCtrl" sse-events>
+			<div class="item list" ng-repeat="order in orders">
+				<div class="item item-divider item-icon-right">
+					Order by table {{order.table}} <span class="badge">(created at: {{order.createdAt | date:'medium' }})</span>
+					<i ng-if="order.ready" class="icon ion-checkmark-round" style="color:green"></i>
+					<i ng-if="!order.ready" class="icon ion-close-round" style="color:red"></i>
+				</div>
+				<div class="item list" ng-repeat="dishes in order.dishes">
+					<div class="item item-icon-right" ng-repeat="dish in dishes">
+						{{dish.name}} &times; {{dish.portionsToDeliver}} <span class="badge">(ready: {{dish.portionsReadyInTheKitchen}})</span>
+						<i ng-if="dish.ready" class="icon ion-checkmark-round" style="color:green"></i>
+						<i ng-if="!dish.ready" class="icon ion-close-round" style="color:red"></i>
+					</div>
+				</div>
+			</div>
 		</div>
 
 	    <!-- build:js kt-scripts/modules.js -->
