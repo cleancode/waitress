@@ -12,6 +12,7 @@
   "dependencies": {
     "express": "~3.4.4",
     "mongoose": "~3.8.0",
+    "mongoose-trackable": "git+https://github.com/gabrielelana/mongoose-trackable.git#master",
     "lodash": "~2.4.1",
     "async": "~0.2.9",
     "mongodb": "~1.3.19",

@@ -38,7 +38,7 @@ var Order = (function(Order) {
     dishes: [DishInOrder]
   })
 
-  Order.plugin(require('./../lib/mongoose-timestamp'))
+  Order.plugin(require('mongoose-trackable'))
 
   Order.set('toObject', {virtuals: true})
   Order.set('toJSON', {
