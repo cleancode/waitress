@@ -75,15 +75,14 @@ describe('Order', function() {
   describe('#createdBetween query', function() {
     it('returns orders created between some timestamps', function(done) {
       Order.save(this.anOrderSpecification(), function(err, order) {
-        var util = require('util')
-        Order.createdBetween(1, order.createdAt, function(err, orders) {
+        Order.createdBetween(1, order.createdAt.getTime() + 1, function(err, orders) {
           expect(orders).to.be.length(1)
           done()
         })
       })
     })
 
-    it('returns nothing when first timestamps are in the future', function(done) {
+    it('returns nothing when time range is in the future', function(done) {
       var inTheFuture = _.now() + 100000
       Order.save(this.anOrderSpecification(), function(err, order) {
         Order.createdBetween(inTheFuture, inTheFuture + 10, function(err, updatedAfter) {
@@ -93,8 +92,33 @@ describe('Order', function() {
       })
     })
 
-    // XXX: must be tested more but unfortunately mongoose-timestamp
-    // doesn't support the injection of time, a pull request is mandatory :smile:
+    it('returns nothing when time range is in the past', function(done) {
+      var inThePast = _.now() - 100000
+      Order.save(this.anOrderSpecification(), function(err, order) {
+        Order.createdBetween(inThePast - 10, inThePast, function(err, updatedAfter) {
+          expect(updatedAfter).to.have.length(0)
+          done()
+        })
+      })
+    })
+
+    it('includes the lower bound', function(done) {
+      Order.save(this.anOrderSpecification(), function(err, order) {
+        Order.createdBetween(order.createAt, order.createdAt.getTime() + 1, function(err, orders) {
+          expect(orders).to.be.length(1)
+          done()
+        })
+      })
+    })
+
+    it('includes the upper bound', function(done) {
+      Order.save(this.anOrderSpecification(), function(err, order) {
+        Order.createdBetween(order.createdAt.getTime() - 1, order.createdAt, function(err, orders) {
+          expect(orders).to.be.length(1)
+          done()
+        })
+      })
+    })
   })
 
   describe('rendered as JSON', function() {
