@@ -2,7 +2,7 @@
 
 ## DAY-1
 
-### 09:30-10:00 [1P] [INTRODUCTION]
+### 09:00-09:30 [1P] [INTRODUCTION]
 * introduction: what we are gonna do today?
 * presentations:
   * who are you?
@@ -47,9 +47,9 @@
 * ... work
 * checkout branch `unified-grunt` and review the code
 
-### 18:00-??:?? [Q&A]
-
 ## DAY-2
+
+### 09:00-09:30 [1P] [Q&A]
 
 ### 09:30-11:30 [4P] [ORDERS]
 * checkout branch `work-on-orders`
@@ -83,7 +83,7 @@
 * checkout branch `master`
 * ... work
 
-### 17:30-??:?? [Q&A]
+### 17:30-18:00 [1P] [Q&A]
 
 # RULES
 Every pomodoro (aka 25 minutes, marked with {N}P in the agenda above) we accumulate 5 minutes of break, we can use them at the end of every pomodoro or at the end of the session, we will decide that together
