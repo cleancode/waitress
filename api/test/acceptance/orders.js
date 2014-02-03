@@ -57,5 +57,18 @@ describe('HTTP /orders resource', function() {
     })
   })
 
+  describe('GET /orders/:id', function() {
+    it('returns all orders', function(done) {
+      var self = this
+      Order.save(self.anOrderSpecification(), function(err, order) {
+        request.get(self.urlFor('/orders/' + order.id), function(err, res, body) {
+          expect(res.headers['content-type']).to.contain('application/json')
+          expect(JSON.stringify(order)).to.eq(body)
+          done()
+        })
+      })
+    })
+  })
+
   after(helper.stopServer)
 })

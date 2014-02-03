@@ -50,6 +50,12 @@ app.get('/orders', sse(Order), function(req, res) {
   })
 })
 
+app.get('/orders/:id', function(req, res) {
+  Order.findById(req.params.id, function(err, order) {
+    res.json(order)
+  })
+})
+
 app.post('/orders/ready', function(req, res) {
   async.map(
     req.body,
