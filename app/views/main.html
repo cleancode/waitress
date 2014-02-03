@@ -1,0 +1,25 @@
+<header class="bar bar-header bar-dark">
+    <h1 class="title">Ordine Corrente</h1>
+    <button class="button  button-clear">
+        <a class="icon ion-ios7-upload-outline" ng-if="checkorder" ng-href="#/order"></a>
+    </button>
+</header>
+<content has-header="true">
+
+    <div class="list">
+      <div  ng-repeat-start="dish in dishes | orderBy:['index','iscategory'] " 
+            class="item item-divider"
+            ng-if="dish.iscategory"
+            >
+            {{dish.category}}
+      </div>
+      <a    ng-repeat-end 
+            ng-if="!dish.iscategory" 
+            ng-href="#/dish/{{dish.id}}"
+            class="item">
+            {{dish.name}} 
+            <span class="item-note">({{ getPortions(dish.id) }} porzioni)</span>
+      </a>
+    </div>
+
+</content>

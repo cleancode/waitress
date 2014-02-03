@@ -26,3 +26,34 @@ module.exports.startServer = function(app) {
 module.exports.stopServer = function(done) {
   this.server.close(done)
 }
+
+module.exports.forOrders = function(done) {
+  var self = this,
+      mongodb = require('mongodb'),
+      Dish = require('./../models/dish')
+
+  Dish.find().exec(function(err, docs) {
+    self.allDishIds = _(docs).pluck('_id').shuffle().value()
+    self.anOrderSpecification = function() {
+      var dishes = _.flatten(arguments)
+      if (dishes.length === 0) {
+        dishes = _(self.allDishIds).sample(3).map(function(id) {
+          return {
+            id: id,
+            portions: _.random(1, 5)
+          }
+        })
+      }
+      return {
+        table: new mongodb.ObjectID(),
+        dishes: dishes.map(function(dishInOrder) {
+          if (!dishInOrder.dish) {
+            dishInOrder.id = self.allDishIds.pop()
+          }
+          return dishInOrder
+        })
+      }
+    }
+    done()
+  })
+}

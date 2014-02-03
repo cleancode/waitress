@@ -1,25 +1,11 @@
 var express = require('express'),
-    app = module.exports = express(),
     mongoose = require('mongoose'),
+    app = module.exports = express(),
+    sse = require('./lib/connect-mongoose-sse'),
     util = require('util')
 
-
-var Dish = mongoose.model('Dish', new mongoose.Schema(
-  {
-    name: String,
-    category: String
-  },
-  {
-    toJSON: {
-      virtuals: true,
-      transform: function(doc, ret) {
-        delete ret._id
-        delete ret.__v
-      }
-    }
-  }
-))
-
+var Dish = require('./models/dish'),
+    Order = require('./models/order')
 
 app.configure(function() {
   app.set('port', process.env.PORT || 3000)
@@ -33,6 +19,7 @@ app.configure('test', function() {
 
 app.use(express.favicon())
 app.use(express.logger('dev'))
+app.use(express.json())
 app.use(require('cors')())
 
 mongoose.connect(app.get('db'))
@@ -49,6 +36,19 @@ app.get('/dishes', function(req, res) {
   })
 })
 
+app.post('/orders', function(req, res) {
+  Order.save(req.body, function(err, order) {
+    res.location(util.format('/order/%s', order.id))
+    res.json(201, order)
+  })
+})
+
+app.get('/orders', sse(Order), function(req, res) {
+  Order.find(function(err, orders) {
+    res.json(orders)
+  })
+})
+
 if (require.main === module) {
   mongoose.connection.on('connected', function() {
     require('./lib/fixtures').load(mongoose.connection.db, function() {
@@ -58,3 +58,4 @@ if (require.main === module) {
     })
   })
 }
+

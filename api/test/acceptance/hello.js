@@ -1,7 +1,7 @@
-var expect = require('chai').expect,
+var helper = require('./../_helper'),
+    app = require('./../../app'),
     request = require('request'),
-    helper = require('./../_helper'),
-    app = require('./../../app')
+    expect = require('chai').expect
 
 describe('HTTP /hello resource', function() {
   before(helper.startServer(app))
