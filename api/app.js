@@ -5,13 +5,13 @@ var express = require('express'),
     util = require('util'),
     async = require('async'),
     http = require('http'),
-    Primus = require('primus.io')
+    Primus = require('primus')
 
 var Dish = require('./models/dish'),
     Order = require('./models/order')
 
 var server = http.createServer(app),
-    primus = new Primus(server, {transformer: 'websockets', parser: 'JSON'})
+    primus = new Primus(server, { transformer: 'websockets' })
 
 app.configure(function() {
   app.set('port', process.env.PORT || 3000)

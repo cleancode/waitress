@@ -27,7 +27,7 @@
                                 </li>
                             </ul>
                         </div>
-                        <button class="dish-send" ng-disabled="orderForm.$invalid" ng-click="inviaOrdine(order)">Ordine pronto</button>
+                        <button class="dish-send" ng-disabled="orderForm.$invalid" ng-click="inviaOrdine(order, $index + ($parent.$index * chunkSize))">Ordine pronto</button>
                     </form>
                 </div>
             </div>

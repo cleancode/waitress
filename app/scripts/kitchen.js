@@ -3,9 +3,10 @@
 
 angular.module('kitchenApp', [])
 
-.controller('ordersCtrl', ['$scope', function($scope){
+.controller('ordersCtrl',function($scope, $http, baseRoot){
   var collectedOrders = [];
   $scope.chunks = [];
+  $scope.chunkSize = 4;
 
   $scope.$on('orders', function(evt, orders){
     $scope.$apply(function(){
@@ -21,6 +22,15 @@ angular.module('kitchenApp', [])
     }
     return array;
   };
+
+  $scope.inviaOrdine = function(order, idx){
+    console.log(idx);
+    $http.post( baseRoot + '/orders/ready', [order.id] )
+    .success(function(){
+      collectedOrders.splice(idx, 1);
+      $scope.chunks = ordersInChunk(collectedOrders, $scope.chunkSize);
+    });
+  };
   
   function ordersInChunk(orders, size){
     var chunks = [];
@@ -31,15 +41,15 @@ angular.module('kitchenApp', [])
     return chunks;
   }
 
-}])
+})
 
 .constant('baseRoot', 'http://localhost:3000')
 
-.directive('sseEvents', ['$rootScope', 'baseRoot', function($rootScope, baseRoot){
+.directive('sseEvents', function($rootScope, baseRoot){
   return function(){
     var source = new EventSource( baseRoot +'/orders');
     source.addEventListener('orders', function(evt){
       $rootScope.$broadcast('orders', JSON.parse(evt.data));
     });
   };
-}]);
+});

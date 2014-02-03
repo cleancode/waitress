@@ -20,7 +20,7 @@
     <![endif]-->
 
     <!-- Add your site or application content here -->
-    <div class="container" ng-view=""></div>
+    <div class="container" primus ng-view=""></div>
 
     <!-- build:js scripts/vendor.js -->
     <!-- bower:js -->
@@ -33,6 +33,7 @@
     <!-- endbower --> 
     <script src="bower_components/ionic/dist/js/angular/angular-resource.js"></script>
     <script src="bower_components/ionic/dist/js/angular/angular-route.js"></script>
+    <script src="http://127.0.0.1:3000/primus/primus.js"></script>
     <!-- endbuild -->
 
         <!-- build:js({.tmp,app}) scripts/scripts.js -->
@@ -43,6 +44,7 @@
         <script src="scripts/services/orderservice.js"></script>
         <script src="scripts/controllers/order.js"></script>
         <script src="scripts/services/order.js"></script>
+        <script src="scripts/directives/primus.js"></script>
         <!-- endbuild -->
 </body>
 </html>
