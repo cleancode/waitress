@@ -3,10 +3,15 @@ var express = require('express'),
     app = module.exports = express(),
     sse = require('./lib/connect-mongoose-sse'),
     util = require('util'),
-    async = require('async')
+    async = require('async'),
+    http = require('http'),
+    Primus = require('primus.io')
 
 var Dish = require('./models/dish'),
     Order = require('./models/order')
+
+var server = http.createServer(app),
+    primus = new Primus(server, {transformer: 'websockets', parser: 'JSON'})
 
 app.configure(function() {
   app.set('port', process.env.PORT || 3000)
@@ -69,6 +74,7 @@ app.post('/orders/ready', function(req, res) {
     },
     function(err, all) {
       res.send(204)
+      primus.write({orders: req.body})
     }
   )
 })
@@ -76,7 +82,7 @@ app.post('/orders/ready', function(req, res) {
 if (require.main === module) {
   mongoose.connection.on('connected', function() {
     require('./lib/fixtures').load(mongoose.connection.db, function() {
-      require('http').createServer(app).listen(app.get('port'), function() {
+      server.listen(app.get('port'), function() {
         console.log('Waitress server is running on port %d', app.get('port'))
       })
     })
