@@ -58,6 +58,13 @@ var Order = (function(Order) {
     })
   })
 
+  Order.method('allDishesAreReady', function() {
+    this.dishes.forEach(function(dish) {
+      dish.portionsReadyInTheKitchen = dish.portionsToDeliver
+    })
+    return this
+  })
+
   Order.statics.save = function(data, callAfterSave) {
     async.map(
       data.dishes,

@@ -59,12 +59,12 @@ app.get('/orders/:id', function(req, res) {
 app.post('/orders/ready', function(req, res) {
   async.map(
     req.body,
-    function(orderThatIsReady, done) {
-      Order.findById(orderThatIsReady, function(err, orderThatIsReady) {
-        orderThatIsReady.dishes.forEach(function(dish) {
-          dish.portionsReadyInTheKitchen = dish.portionsToDeliver
-        })
-        orderThatIsReady.save(done)
+    function(orderId, done) {
+      Order.findById(orderId, function(err, order) {
+        if (err) {
+          return done()
+        }
+        order.allDishesAreReady().save(done)
       })
     },
     function(err, all) {
