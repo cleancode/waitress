@@ -79,9 +79,11 @@
 
 ### 16:00-16:30 [BREAK]
 
-### 16:30-17:30 [2P] [DEPLOY] [GL]
+### 16:30-17:30 [2P] [PUSH]
 * checkout branch `master`
-* ... work
+* review ws code in /api
+* review ws code in /app
+* deploy and enjoy
 
 ### 17:30-18:00 [1P] [Q&A]
 
