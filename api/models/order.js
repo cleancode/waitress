@@ -66,6 +66,8 @@ var Order = (function(Order) {
   })
 
   Order.statics.save = function(data, callAfterSave) {
+    var order = this
+
     async.map(
       data.dishes,
       function(dish, done) {
@@ -77,13 +79,10 @@ var Order = (function(Order) {
           done(err, dish)
         })
       },
-      _.bind(
-        function(err, dishes) {
-          data.dishes = dishes
-          this.create(data, callAfterSave)
-        },
-        this
-      )
+      function(err, dishes) {
+        data.dishes = dishes
+        order.create(data, callAfterSave)
+      }
     )
   }
 
