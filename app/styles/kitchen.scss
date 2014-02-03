@@ -1,0 +1,30 @@
+@import "../bower_components/bootstrap-sass/vendor/assets/stylesheets/bootstrap";
+
+.main-title{
+    @extend .col-xs-12;
+}
+
+.order-chunk{
+    @extend .row;
+    margin-bottom: 30px;    
+}
+
+.order{
+    @extend .col-xs-12;
+    @extend .col-sm-6;
+    @extend .col-md-3;
+}
+
+.dish-category{
+    text-transform: capitalize;
+}
+
+label{
+    display: block;
+}
+
+.dish-send{
+    @extend .btn; 
+    @extend .btn-default;
+    @extend .btn-block;
+}

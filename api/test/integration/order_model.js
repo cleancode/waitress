@@ -47,7 +47,10 @@ describe('Order', function() {
 
     Order.save(orderWithThreePortionsOfOneDish, function(err, order) {
       expect(order.dishes).all.have.property('ready', false)
-      order.allDishesAreReady()
+
+      order.dishes.forEach(function(dish) {
+        dish.portionsReadyInTheKitchen = portionsToDeliver
+      })
       expect(order.dishes).all.have.property('ready', true)
     })
   })
@@ -60,7 +63,11 @@ describe('Order', function() {
 
     Order.save(orderWithThreePortionsOfOneDish, function(err, order) {
       expect(order).to.have.property('ready', false)
-      order.allDishesAreReady()
+
+      order.dishes.forEach(function(dish) {
+        dish.portionsReadyInTheKitchen = portionsToDeliver
+      })
+
       expect(order).to.have.property('ready', true)
     })
   })

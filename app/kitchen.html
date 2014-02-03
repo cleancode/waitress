@@ -1,21 +1,48 @@
 <!doctype html>
 <html>
-	<head>
-		<title>Kitchen</title>
-	</head>
-	<body ng-app="kitchenApp">
-		<div ng-controller="ordersCtrl" sse-events>
-			<span ng-repeat="order in orders">
-				{{order.dishes}}
-			</span>
-		</div>
+    <head>
+        <title>Kitchen</title>
+        <!-- build:css({.tmp,app}) styles/kitchen.css -->
+        <link rel="stylesheet" href="styles/kitchen.css">
+        <!-- endbuild -->
+    </head>
+    <body ng-app="kitchenApp">
 
-	    <!-- build:js kt-scripts/modules.js -->
-	    <script src="bower_components/angular/angular.js"></script>
-	    <!-- endbuild -->	
+        <div class="container"  ng-controller="ordersCtrl" sse-events>
+            <div class="row">
+                <h1 class="main-title">Kitchen</h1>
+            </div>
+            <div class="order-chunk" ng-repeat="orders in chunks">
+                <div class="order" ng-repeat="order in orders">
+                    <form name="orderForm" novalidate>
+                        <h4>Tavolo: {{order.table}}</h4>
+                        <div class="dishes" ng-repeat="(category, dishes) in order.dishes">
+                            <h5 class="dish-category">{{category}}:</h5>
+                            <ul>
+                                <li class="dish-name" ng-repeat="dish in dishes">
+                                    <p>{{dish.name}}</p>
+                                    <label ng-repeat="portions in arrayze(dish.portionsToDeliver)">
+                                        <input type="checkbox" ng-model="dish['portions' + $index]" value="pronto" required>&nbsp;{{$index+1}} porzione
+                                    </label>
+                                </li>
+                            </ul>
+                        </div>
+                        <button class="dish-send" ng-disabled="orderForm.$invalid" ng-click="inviaOrdine(order)">Ordine pronto</button>
+                    </form>
+                </div>
+            </div>
+        </div>
 
-	    <!-- build:js({.tmp,app}) kt-scripts/scripts.js -->
-    	<script src="kt-scripts/app.js"></script>	
-		<!-- endbuild -->    	
-	</body>
+        <!-- build:js scripts/kitchen-vendor.js -->
+        <!-- bower:js -->
+        <script src="bower_components/jquery/jquery.js"></script>
+        <script src="bower_components/bootstrap-sass/vendor/assets/javascripts/bootstrap.js"></script>
+        <!-- endbower -->
+        <script src="bower_components/ionic/dist/js/angular/angular.js"></script>    
+        <!-- endbuild --> 
+
+        <!-- build:js({.tmp,app}) scripts/kitchen-scripts.js -->
+        <script src="scripts/kitchen.js"></script>
+        <!-- endbuild -->
+    </body>
 </html>

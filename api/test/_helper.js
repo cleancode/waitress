@@ -51,7 +51,7 @@ module.exports.forOrders = function(done) {
             dishInOrder.id = self.allDishIds.pop()
           }
           return dishInOrder
-        }).valueOf()
+        })
       }
     }
     done()

@@ -58,16 +58,7 @@ var Order = (function(Order) {
     })
   })
 
-  Order.method('allDishesAreReady', function() {
-    this.dishes.forEach(function(dish) {
-      dish.portionsReadyInTheKitchen = dish.portionsToDeliver
-    })
-    return this
-  })
-
   Order.statics.save = function(data, callAfterSave) {
-    var order = this
-
     async.map(
       data.dishes,
       function(dish, done) {
@@ -79,10 +70,13 @@ var Order = (function(Order) {
           done(err, dish)
         })
       },
-      function(err, dishes) {
-        data.dishes = dishes
-        order.create(data, callAfterSave)
-      }
+      _.bind(
+        function(err, dishes) {
+          data.dishes = dishes
+          this.create(data, callAfterSave)
+        },
+        this
+      )
     )
   }
 
