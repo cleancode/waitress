@@ -2,7 +2,8 @@ var express = require('express'),
     mongoose = require('mongoose'),
     app = module.exports = express(),
     sse = require('./lib/connect-mongoose-sse'),
-    util = require('util')
+    util = require('util'),
+    async = require('async')
 
 var Dish = require('./models/dish'),
     Order = require('./models/order')
@@ -47,6 +48,23 @@ app.get('/orders', sse(Order), function(req, res) {
   Order.find(function(err, orders) {
     res.json(orders)
   })
+})
+
+app.post('/orders/ready', function(req, res) {
+  async.map(
+    req.body,
+    function(orderThatIsReady, done) {
+      Order.findById(orderThatIsReady, function(err, orderThatIsReady) {
+        orderThatIsReady.dishes.forEach(function(dish) {
+          dish.portionsReadyInTheKitchen = dish.portionsToDeliver
+        })
+        orderThatIsReady.save(done)
+      })
+    },
+    function(err, all) {
+      res.send(204)
+    }
+  )
 })
 
 if (require.main === module) {
