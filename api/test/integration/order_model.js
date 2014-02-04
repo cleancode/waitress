@@ -65,55 +65,6 @@ describe('Order', function() {
     })
   })
 
-  describe('#createdBetween query', function() {
-    it('returns orders created between some timestamps', function(done) {
-      Order.save(this.anOrderSpecification(), function(err, order) {
-        Order.createdBetween(1, order.createdAt.getTime() + 1, function(err, orders) {
-          expect(orders).to.be.length(1)
-          done()
-        })
-      })
-    })
-
-    it('returns nothing when time range is in the future', function(done) {
-      var inTheFuture = _.now() + 100000
-      Order.save(this.anOrderSpecification(), function(err, order) {
-        Order.createdBetween(inTheFuture, inTheFuture + 10, function(err, updatedAfter) {
-          expect(updatedAfter).to.have.length(0)
-          done()
-        })
-      })
-    })
-
-    it('returns nothing when time range is in the past', function(done) {
-      var inThePast = _.now() - 100000
-      Order.save(this.anOrderSpecification(), function(err, order) {
-        Order.createdBetween(inThePast - 10, inThePast, function(err, updatedAfter) {
-          expect(updatedAfter).to.have.length(0)
-          done()
-        })
-      })
-    })
-
-    it('includes the lower bound', function(done) {
-      Order.save(this.anOrderSpecification(), function(err, order) {
-        Order.createdBetween(order.createAt, order.createdAt.getTime() + 1, function(err, orders) {
-          expect(orders).to.be.length(1)
-          done()
-        })
-      })
-    })
-
-    it('includes the upper bound', function(done) {
-      Order.save(this.anOrderSpecification(), function(err, order) {
-        Order.createdBetween(order.createdAt.getTime() - 1, order.createdAt, function(err, orders) {
-          expect(orders).to.be.length(1)
-          done()
-        })
-      })
-    })
-  })
-
   describe('rendered as JSON', function() {
     it('has dishes groupped by category', function(done) {
       var fiveDishes = _(5).times(function() {return {portions: _.random(2,4)}})

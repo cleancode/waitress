@@ -86,18 +86,6 @@ var Order = (function(Order) {
     )
   }
 
-  Order.statics.createdBetween = function(fromTimestamp, toTimestamp, callback) {
-    var query =
-      this.where('createdAt')
-        .gte(new Date(fromTimestamp))
-        .lte(new Date(toTimestamp))
-
-    if (callback) {
-      return query.exec(callback)
-    }
-    return query
-  }
-
   return Order
 
 })(new Schema())
