@@ -33,24 +33,24 @@ var DishInOrder = (function(DishInOrder) {
 
 var Order = (function(Order) {
 
-  Order.add({
-    table: String,
-    dishes: [DishInOrder]
-  })
+  Order.add({table: String, dishes: [DishInOrder]})
 
-  Order.plugin(require('mongoose-trackable'))
+  Order
+    .plugin(require('mongoose-eventful'), {emitChangedOnVirtualFields: 'ready'})
+    .plugin(require('mongoose-trackable'))
 
-  Order.set('toObject', {virtuals: true})
-  Order.set('toJSON', {
-    virtuals: true,
-    transform: function(doc, ret) {
-      ret.dishes = _.groupBy(ret.dishes, function(dish) {
-        return dish.category
-      })
-      delete ret._id
-      delete ret.__v
-    }
-  })
+  Order
+    .set('toObject', {virtuals: true})
+    .set('toJSON', {
+      virtuals: true,
+      transform: function(doc, ret) {
+        ret.dishes = _.groupBy(ret.dishes, function(dish) {
+          return dish.category
+        })
+        delete ret._id
+        delete ret.__v
+      }
+    })
 
   Order.virtual('ready').get(function() {
     return _(this.dishes).every(function(dish) {

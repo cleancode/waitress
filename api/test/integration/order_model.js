@@ -81,4 +81,22 @@ describe('Order', function() {
       })
     })
   })
+
+  it('emits changed:ready when order is ready', function(done) {
+    var portionsToDeliver = 3,
+        orderWithThreePortionsOfOneDish = this.anOrderSpecification({
+          portions: portionsToDeliver
+        })
+
+    Order.once('changed:ready', function(order) {
+      expect(order).to.have.property('ready', true)
+      done()
+    })
+
+    Order.save(orderWithThreePortionsOfOneDish, function(err, order) {
+      expect(order).to.have.property('ready', false)
+      order.allDishesAreReady()
+      order.save()
+    })
+  })
 })

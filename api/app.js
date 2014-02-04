@@ -74,9 +74,14 @@ app.post('/orders/ready', function(req, res) {
     },
     function(err, all) {
       res.send(204)
-      primus.write({orders: req.body})
     }
   )
+})
+
+Order.on('changed:ready', function(order) {
+  if (order.ready) {
+    primus.write({orders: [order.id]})
+  }
 })
 
 if (require.main === module) {
