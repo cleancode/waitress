@@ -39,7 +39,7 @@ describe('Order', function() {
     })
   })
 
-  it('has dishes with ready field', function() {
+  it('has dishes with ready field', function(done) {
     var portionsToDeliver = 3,
         orderWithThreePortionsOfOneDish = this.anOrderSpecification({
           portions: portionsToDeliver
@@ -49,10 +49,11 @@ describe('Order', function() {
       expect(order.dishes).all.have.property('ready', false)
       order.allDishesAreReady()
       expect(order.dishes).all.have.property('ready', true)
+      done()
     })
   })
 
-  it('has ready field', function() {
+  it('has ready field', function(done) {
     var portionsToDeliver = 3,
         orderWithThreePortionsOfOneDish = this.anOrderSpecification({
           portions: portionsToDeliver
@@ -62,6 +63,7 @@ describe('Order', function() {
       expect(order).to.have.property('ready', false)
       order.allDishesAreReady()
       expect(order).to.have.property('ready', true)
+      done()
     })
   })
 
