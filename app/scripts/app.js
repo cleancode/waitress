@@ -16,6 +16,19 @@ angular.module('waitressApp', [
           }]
         }
       })
+      .when('/dish/:id', {
+        templateUrl: 'views/dish.html',
+        controller: 'DishCtrl'
+      })
+      .when('/order', {
+        templateUrl: 'views/order.html',
+        controller: 'OrderCtrl',
+        resolve: {
+          dishes: ['Dishloader', function(Dishloader){
+            return Dishloader();
+          }]
+        }
+      })
       .otherwise({
         redirectTo: '/'
       });
