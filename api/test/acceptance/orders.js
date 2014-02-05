@@ -55,6 +55,34 @@ describe('HTTP /orders resource', function() {
         })
       })
     })
+
+    describe('with header Accept: test/event-stream', function() {
+      describe('when header Last-Event-Id is 0', function() {
+        it('returns a server sent event with all orders', function(done) {
+          var self = this,
+              options = {
+                url: self.urlFor('/orders'),
+                headers: {
+                  'Accept': 'text/event-stream'
+                }
+              }
+
+          Order.save(self.anOrderSpecification(), function(err, order) {
+            request.get(options, function(err, res, body) {
+              expect(res.statusCode).to.equal(200)
+              expect(res.headers['content-type']).to.contain('text/event-stream')
+
+              var textLinesInBody = body.split('\n')
+              expect(textLinesInBody[0]).to.match(/id:/)
+              expect(textLinesInBody[1]).to.eq('event: orders')
+              expect(textLinesInBody[2]).to.eq('data: ' + JSON.stringify([order]))
+
+              done()
+            })
+          })
+        })
+      })
+    })
   })
 
   describe('GET /orders/:id', function() {
