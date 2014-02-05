@@ -186,7 +186,13 @@ module.exports = function (grunt) {
     'bower-install': {
       app: {
         html: '<%= yeoman.app %>/index.html',
-        ignorePath: '<%= yeoman.app %>/'
+        ignorePath: '<%= yeoman.app %>/',
+        exclude: [/bootstrap/,/jquery/]
+      },
+      kitchen: {
+        html: '<%= yeoman.app %>/kitchen.html',
+        ignorePath: '<%= yeoman.app %>/',
+        exclude: [/ionic/]
       }
     },
 
