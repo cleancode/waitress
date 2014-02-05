@@ -3,22 +3,8 @@ var express = require('express'),
     mongoose = require('mongoose'),
     util = require('util')
 
-
-var Dish = mongoose.model('Dish', new mongoose.Schema(
-  {
-    name: String,
-    category: String
-  },
-  {
-    toJSON: {
-      virtuals: true,
-      transform: function(doc, ret) {
-        delete ret._id
-        delete ret.__v
-      }
-    }
-  }
-))
+var Dish = require('./models/dish'),
+    Order = require('./models/order')
 
 
 app.configure(function() {
