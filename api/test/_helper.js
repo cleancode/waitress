@@ -6,6 +6,14 @@ var http = require('http'),
     _ = require('lodash')
 
 
+module.exports.loadFixtures = function(app) {
+  return function(done) {
+    require('mongodb').MongoClient.connect(app.get('db'), function(err, db) {
+      require('./../lib/fixtures').load(db, done, path.join(__dirname, '..', 'fixtures'))
+    })
+  }
+}
+
 module.exports.startServer = function(app) {
   return function(done) {
     this.server = http.createServer(app).listen(app.get('port'), done)
