@@ -42,8 +42,24 @@ module.exports = function (grunt) {
         files: ['<%= yeoman.app %>/styles/{,*/}*.{scss,sass}'],
         tasks: ['compass:server', 'autoprefixer']
       },
+      mocha: {
+        files:  [ 'api/*.js','api/{fixtures,models,lib,test}/**/*.js'],
+        tasks:  [ 'mochaTest'],
+      },
       gruntfile: {
         files: ['Gruntfile.js']
+      },
+      protractor: {
+        files:  [ 'test/e2e/{,*/}*.js'],
+        tasks:  [ 'protractor']
+      },
+      express: {
+        files:  [ 'api/app.js', 'api/{fixtures,models,lib,test}/**/*.js'],
+        tasks:  [ 'express' ],
+        options: {
+          nospawn: true,
+          livereload: true
+        }
       },
       livereload: {
         options: {
@@ -89,6 +105,33 @@ module.exports = function (grunt) {
           base: '<%= yeoman.dist %>'
         }
       }
+    },
+
+    express: {
+      livereload:{
+        options: {
+          script: 'api/app.js'
+        }
+      }
+    },
+
+    mochaTest: {
+      test: {
+        options: {
+          reporter: 'spec'
+        },
+        src: ['api/test/**/*.js']
+      }
+    },
+
+
+    protractor: {
+      all: {
+        options: {
+          configFile: 'protractor-e2e.js', // Target-specific config file
+          args: {} // Target-specific arguments
+        }
+      },
     },
 
     // Make sure code styles are up to par and there are no obvious mistakes
@@ -358,6 +401,7 @@ module.exports = function (grunt) {
 
     grunt.task.run([
       'clean:server',
+      'express',
       'bower-install',
       'concurrent:server',
       'autoprefixer',
