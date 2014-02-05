@@ -1,0 +1,7 @@
+{
+  "name": "waitress",
+  "version": "0.0.0",
+  "dependencies": {
+    "ionic": "0.9.21-alpha"
+  }
+}
