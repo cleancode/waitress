@@ -8,14 +8,14 @@ describe('Order', function() {
   beforeEach(helper.loadFixtures(app))
   beforeEach(helper.forOrders)
 
-  xit('can be created from specification data', function(done) {
+  it('can be created from specification data', function(done) {
     Order.save(this.anOrderSpecification(), function(err, order) {
       expect(err).to.eq(null)
       done()
     })
   })
 
-  xit('has dishes with portionsToDeliver field', function(done) {
+  it('has dishes with portionsToDeliver field', function(done) {
     var portionsToDeliver = 3,
         orderWithThreePortionsOfOneDish = this.anOrderSpecification({
           portions: portionsToDeliver
@@ -27,7 +27,7 @@ describe('Order', function() {
     })
   })
 
-  xit('has dishes with portionsReadyInTheKitchen field', function(done) {
+  it('has dishes with portionsReadyInTheKitchen field', function(done) {
     var portionsToDeliver = 3,
         orderWithThreePortionsOfOneDish = this.anOrderSpecification({
           portions: portionsToDeliver
@@ -39,7 +39,7 @@ describe('Order', function() {
     })
   })
 
-  xit('has dishes with ready field', function() {
+  it('has dishes with ready field', function() {
     var portionsToDeliver = 3,
         orderWithThreePortionsOfOneDish = this.anOrderSpecification({
           portions: portionsToDeliver
@@ -55,7 +55,7 @@ describe('Order', function() {
     })
   })
 
-  xit('has ready field', function() {
+  it('has ready field', function() {
     var portionsToDeliver = 3,
         orderWithThreePortionsOfOneDish = this.anOrderSpecification({
           portions: portionsToDeliver
@@ -73,7 +73,7 @@ describe('Order', function() {
   })
 
   describe('rendered as JSON', function() {
-    xit('has dishes groupped by category', function(done) {
+    it('has dishes groupped by category', function(done) {
       var fiveDishes = _(5).times(function() {return {portions: _.random(2,4)}})
       Order.save(this.anOrderSpecification(fiveDishes), function(err, order) {
         var orderBackFromJSON = JSON.parse(JSON.stringify(order))
@@ -88,12 +88,15 @@ describe('Order', function() {
   })
 
   describe('createdBetween query', function() {
-    xit('returns orders created between some timestamps', function(done) {
+    it('returns orders created between some timestamps', function(done) {
       Order.save(this.anOrderSpecification(), function(err, order) {
         var createdAtTime = order.createdAt.getTime()
         Order.createdBetween(createdAtTime - 10, createdAtTime + 10, function(err, orders) {
           expect(orders).to.be.length(1)
-          done()
+          Order.createdBetween(createdAtTime - 100, createdAtTime - 10, function(err, orders) {
+            expect(orders).to.be.length(0)
+            done()
+          })
         })
       })
     })
