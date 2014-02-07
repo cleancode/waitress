@@ -20,6 +20,7 @@ module.exports = function(config) {
       'app/bower_components/ionic/dist/js/angular/angular-resource.js',
       'app/bower_components/ionic/dist/js/angular/angular-route.js',      
       'app/bower_components/ionic/dist/js/angular/angular-mocks.js',      
+      'app/bower_components/underscore/underscore.js',      
       'app/scripts/*.js',
       'app/scripts/**/*.js',
       'test/mock/**/*.js',

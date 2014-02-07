@@ -8,11 +8,11 @@
     </head>
     <body ng-app="kitchenApp">
 
-        <div class="container"  ng-controller="ordersCtrl" sse-events>
+        <div class="container"  ng-controller="ordersCtrl" sse-listener>
             <div class="row">
                 <h1 class="main-title">Kitchen</h1>
             </div>
-            <div class="order-chunk" ng-repeat="orders in chunks">
+            <div class="order-chunk" ng-repeat="chunks in orders | slice:4">
                 <div class="order" ng-repeat="order in orders">
                     <form name="orderForm" novalidate>
                         <h4>Tavolo: {{order.table}}</h4>
@@ -21,13 +21,13 @@
                             <ul>
                                 <li class="dish-name" ng-repeat="dish in dishes">
                                     <p>{{dish.name}}</p>
-                                    <label ng-repeat="portions in arrayze(dish.portionsToDeliver)">
+                                    <label ng-repeat="portion in dish.portionsToDeliver | arrayze">
                                         <input type="checkbox" ng-model="dish['portions' + $index]" value="pronto" required>&nbsp;{{$index+1}} porzione
                                     </label>
                                 </li>
                             </ul>
                         </div>
-                        <button class="dish-send" ng-disabled="orderForm.$invalid" ng-click="inviaOrdine(order, $index + ($parent.$index * chunkSize))">Ordine pronto</button>
+                        <button class="dish-send" ng-disabled="orderForm.$invalid" ng-click="inviaOrdine(order, $index + ($parent.$index * 4))">Ordine pronto</button>
                     </form>
                 </div>
             </div>
@@ -37,6 +37,7 @@
         <!-- bower:js -->
         <script src="bower_components/jquery/jquery.js"></script>
         <script src="bower_components/bootstrap-sass/vendor/assets/javascripts/bootstrap.js"></script>
+        <script src="bower_components/underscore/underscore.js"></script>
         <!-- endbower -->
         <script src="bower_components/ionic/dist/js/angular/angular.js"></script>    
         <!-- endbuild --> 
